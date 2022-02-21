@@ -25,7 +25,7 @@ where
 
         loop {
             tokio::select! {
-
+                // Consume next message from Protocol Stream
                 next_message = self.next() => {
                     // Deserialize Exchange message from next input Protocol message
                     let message = match ParseOutcome::from(next_message) {
@@ -41,6 +41,7 @@ where
                     self.send_many(events.into_iter().collect())
                 }
 
+                // Receive Commands to action
                 command = command_rx.recv() => if let Some(command) = command {
                     match command {
                         Command::OpenOrder((request, response_tx)) => {
