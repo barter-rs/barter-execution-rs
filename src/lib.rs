@@ -9,12 +9,13 @@
 
 pub mod error;
 pub mod event_loop;
+pub mod socket;
 
 use crate::error::ClientError;
 use barter::execution::FillEvent;
 use barter::portfolio::OrderEvent;
 use async_trait::async_trait;
-use tokio::sync::{mpsc, oneshot};
+use tokio::sync::oneshot;
 
 type ClientResult<T> = Result<T, ClientError>;
 

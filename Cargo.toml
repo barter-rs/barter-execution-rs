@@ -19,6 +19,8 @@ tokio-stream = { version = "0.1.7", features = ["sync"] }
 tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
 futures = "0.3.19"
 async-trait = "0.1.52"
+pin-project-lite = "0.2.8"
+pin-project = "1.0.10"
 
 # Error
 thiserror = "1.0.30"
