@@ -11,6 +11,9 @@ use thiserror::Error;
 use pin_project::pin_project;
 use futures::{Sink, Stream};
 
+// Todo: Add proper error enum for BinanceMessage in Barter-Data
+//  eg/ enum BinanceMessage { Error, BinancePayload }
+
 pub trait Transformer<ExchangeMessage, Output>
 where
     ExchangeMessage: DeserializeOwned,
@@ -20,39 +23,39 @@ where
 }
 
 #[pin_project]
-pub struct ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
+pub struct ExchangeSocket<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output>
 where
     Socket: Sink<SocketItem> + Stream,
-    P: ProtocolParser<ExchangeMessage>,
-    T: Transformer<ExchangeMessage, Output>,
+    StreamParser: ProtocolParser<ExchangeMessage>,
+    StreamTransformer: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
     #[pin]
     socket: Socket,
-    parser: P,
-    transformer: T,
+    parser: StreamParser,
+    transformer: StreamTransformer,
     socket_item_marker: PhantomData<SocketItem>,
     exchange_message_marker: PhantomData<ExchangeMessage>,
     output_marker: PhantomData<Output>,
 }
 
-impl<Socket, SocketItem, P, T, ExchangeMessage, Output> Stream
-    for ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
+impl<Socket, SocketItem, StreamItem, StreamParser, StreamTransformer, ExchangeMessage, Output> Stream
+    for ExchangeSocket<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output>
 where
-    Socket: Sink<SocketItem> + Stream<Item = SocketItem>,
-    P: ProtocolParser<ExchangeMessage, Input = SocketItem>,
-    T: Transformer<ExchangeMessage, Output>,
+    Socket: Sink<SocketItem> + Stream<Item = StreamItem>,
+    StreamParser: ProtocolParser<ExchangeMessage, Input = StreamItem>,
+    StreamTransformer: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
-    type Item = Result<T::OutputIter, SocketError>;
+    type Item = Result<StreamTransformer::OutputIter, SocketError>;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
         let this = self.project();
 
         match this.socket.poll_next(cx) {
             Poll::Ready(Some(input)) => {
-                // Parse ExchangeMessage from Socket Stream<Item = Input> & transform to Output
-                match P::parse(input) {
+                // Parse ExchangeMessage from Socket Stream<Item = StreamItem> & transform to Output
+                match StreamParser::parse(input) {
                     Ok(Some(exchange_message)) => {
                         Poll::Ready(Some(this.transformer.transform(exchange_message)))
                     }
@@ -75,12 +78,12 @@ where
     }
 }
 
-impl<Socket, SocketItem, P, T, ExchangeMessage, Output> Sink<SocketItem>
-    for ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
+impl<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output> Sink<SocketItem>
+    for ExchangeSocket<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output>
 where
-    Socket: Sink<SocketItem> + Stream<Item = SocketItem>,
-    P: ProtocolParser<ExchangeMessage, Input = SocketItem>,
-    T: Transformer<ExchangeMessage, Output>,
+    Socket: Sink<SocketItem> + Stream,
+    StreamParser: ProtocolParser<ExchangeMessage>,
+    StreamTransformer: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
     type Error = SocketError;
@@ -99,6 +102,26 @@ where
 
     fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.project().socket.poll_close(cx).map_err(|_| SocketError::SinkError)
+    }
+}
+
+impl<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output>
+    ExchangeSocket<Socket, SocketItem, StreamParser, StreamTransformer, ExchangeMessage, Output>
+where
+    Socket: Sink<SocketItem> + Stream,
+    StreamParser: ProtocolParser<ExchangeMessage>,
+    StreamTransformer: Transformer<ExchangeMessage, Output>,
+    ExchangeMessage: DeserializeOwned,
+{
+    pub fn new(socket: Socket, parser: StreamParser, transformer: StreamTransformer) -> Self {
+        Self {
+            socket,
+            parser,
+            transformer,
+            socket_item_marker: PhantomData::default(),
+            exchange_message_marker: PhantomData::default(),
+            output_marker: PhantomData::default()
+        }
     }
 }
 
