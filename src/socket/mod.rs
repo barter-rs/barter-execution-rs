@@ -13,6 +13,7 @@ use futures::{Sink, Stream};
 
 // Todo: Add proper error enum for BinanceMessage in Barter-Data
 //  eg/ enum BinanceMessage { Error, BinancePayload }
+// Todo: Can I optimise the use of generics? eg/ Socket::Item,
 
 pub trait Transformer<ExchangeMessage, Output>
 where
