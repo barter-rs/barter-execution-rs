@@ -10,11 +10,10 @@ use crate::socket::{
 };
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use pin_project_lite::pin_project;
-use futures::Stream;
+use futures::{Sink, Stream};
 use serde::de::DeserializeOwned;
 use thiserror::Error;
-use pin_project::pin_project as heavy_pin_project;
+use pin_project::pin_project;
 
 #[derive(Debug, Error)]
 pub enum SocketError {
@@ -22,39 +21,34 @@ pub enum SocketError {
     WebSocketError(#[from] tokio_tungstenite::tungstenite::Error),
 
     #[error("JSON SerDe error: {0}")]
-    SerdeJsonError(#[from] serde_json::Error)
+    SerdeJsonError(#[from] serde_json::Error),
+
+    #[error("Sink error")]
+    SinkError,
 }
 
-#[heavy_pin_project]
-pub struct Test<T>
+#[pin_project]
+pub struct ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
 where
-    T: Stream + Debug // Todo: This works with multiple impls, work out how to use this...
+    Socket: Sink<SinkInput> + Stream,
+    P: ProtocolParser<ExchangeMessage>,
+    T: Transformer<ExchangeMessage, Output>,
+    ExchangeMessage: DeserializeOwned,
 {
     #[pin]
-    st: T,
+    socket: Socket,
+    parser: P,
+    transformer: T,
+    sink_input_marker: PhantomData<SinkInput>,
+    exchange_message_marker: PhantomData<ExchangeMessage>,
+    output_marker: PhantomData<Output>,
 }
 
-pin_project! {
-    pub struct ExchangeSocket<Socket, P, T, ExchangeMessage, Output>
-    where
-        Socket: Stream,
-        P: ProtocolParser<ExchangeMessage>,
-        T: Transformer<ExchangeMessage, Output>,
-        ExchangeMessage: DeserializeOwned,
-    {
-        #[pin]
-        socket: Socket,
-        parser: P,
-        transformer: T,
-        exchange_message_marker: PhantomData<ExchangeMessage>,
-        output_marker: PhantomData<Output>,
-    }
-}
-
-impl<Socket, Input, P, T, ExchangeMessage, Output> Stream for ExchangeSocket<Socket, P, T, ExchangeMessage, Output>
+impl<Socket, SinkInput, StreamInput, P, T, ExchangeMessage, Output> Stream
+    for ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
 where
-    Socket: Stream<Item = Input>,
-    P: ProtocolParser<ExchangeMessage, Input = Input>,
+    Socket: Sink<SinkInput> + Stream<Item = StreamInput>,
+    P: ProtocolParser<ExchangeMessage, Input = StreamInput>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
@@ -88,3 +82,43 @@ where
         }
     }
 }
+
+impl<Socket, SinkInput, StreamInput, P, T, ExchangeMessage, Output> Sink<SinkInput>
+    for ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
+where
+    Socket: Sink<SinkInput> + Stream<Item = StreamInput>,
+    P: ProtocolParser<ExchangeMessage, Input = StreamInput>,
+    T: Transformer<ExchangeMessage, Output>,
+    ExchangeMessage: DeserializeOwned,
+{
+    type Error = SocketError;
+
+    fn poll_ready(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.project().socket.poll_ready(cx).map_err(|_| SocketError::SinkError)
+    }
+
+    fn start_send(self: Pin<&mut Self>, item: SinkInput) -> Result<(), Self::Error> {
+        self.project().socket.start_send(item).map_err(|_| SocketError::SinkError)
+    }
+
+    fn poll_flush(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.project().socket.poll_flush(cx).map_err(|_| SocketError::SinkError)
+    }
+
+    fn poll_close(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
+        self.project().socket.poll_close(cx).map_err(|_| SocketError::SinkError)
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
