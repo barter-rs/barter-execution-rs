@@ -1,30 +1,22 @@
 
 pub mod protocol;
-pub mod transformer;
 
+use crate::socket::protocol::ProtocolParser;
 use std::fmt::Debug;
 use std::marker::PhantomData;
-use crate::socket::{
-    protocol::ProtocolParser,
-    transformer::Transformer
-};
 use std::pin::Pin;
 use std::task::{Context, Poll};
-use futures::{Sink, Stream};
 use serde::de::DeserializeOwned;
 use thiserror::Error;
 use pin_project::pin_project;
+use futures::{Sink, Stream};
 
-#[derive(Debug, Error)]
-pub enum SocketError {
-    #[error("WebSocket error: {0}")]
-    WebSocketError(#[from] tokio_tungstenite::tungstenite::Error),
-
-    #[error("JSON SerDe error: {0}")]
-    SerdeJsonError(#[from] serde_json::Error),
-
-    #[error("Sink error")]
-    SinkError,
+pub trait Transformer<ExchangeMessage, Output>
+where
+    ExchangeMessage: DeserializeOwned,
+{
+    type OutputIter: IntoIterator<Item = Output>;
+    fn transform(&mut self, input: ExchangeMessage) -> Result<Self::OutputIter, SocketError>;
 }
 
 #[pin_project]
@@ -44,11 +36,11 @@ where
     output_marker: PhantomData<Output>,
 }
 
-impl<Socket, SinkInput, StreamInput, P, T, ExchangeMessage, Output> Stream
-    for ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
+impl<Socket, SinkItem, StreamItem, P, T, ExchangeMessage, Output> Stream
+    for ExchangeSocket<Socket, SinkItem, P, T, ExchangeMessage, Output>
 where
-    Socket: Sink<SinkInput> + Stream<Item = StreamInput>,
-    P: ProtocolParser<ExchangeMessage, Input = StreamInput>,
+    Socket: Sink<SinkItem> + Stream<Item = StreamItem>,
+    P: ProtocolParser<ExchangeMessage, Input = StreamItem>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
@@ -83,11 +75,11 @@ where
     }
 }
 
-impl<Socket, SinkInput, StreamInput, P, T, ExchangeMessage, Output> Sink<SinkInput>
-    for ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
+impl<Socket, SinkItem, StreamItem, P, T, ExchangeMessage, Output> Sink<SinkItem>
+    for ExchangeSocket<Socket, SinkItem, P, T, ExchangeMessage, Output>
 where
-    Socket: Sink<SinkInput> + Stream<Item = StreamInput>,
-    P: ProtocolParser<ExchangeMessage, Input = StreamInput>,
+    Socket: Sink<SinkItem> + Stream<Item = StreamItem>,
+    P: ProtocolParser<ExchangeMessage, Input = StreamItem>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
@@ -97,7 +89,7 @@ where
         self.project().socket.poll_ready(cx).map_err(|_| SocketError::SinkError)
     }
 
-    fn start_send(self: Pin<&mut Self>, item: SinkInput) -> Result<(), Self::Error> {
+    fn start_send(self: Pin<&mut Self>, item: SinkItem) -> Result<(), Self::Error> {
         self.project().socket.start_send(item).map_err(|_| SocketError::SinkError)
     }
 
@@ -110,15 +102,14 @@ where
     }
 }
 
+#[derive(Debug, Error)]
+pub enum SocketError {
+    #[error("WebSocket error: {0}")]
+    WebSocketError(#[from] tokio_tungstenite::tungstenite::Error),
 
+    #[error("JSON SerDe error: {0}")]
+    SerdeJsonError(#[from] serde_json::Error),
 
-
-
-
-
-
-
-
-
-
-
+    #[error("Sink error")]
+    SinkError,
+}

@@ -10,6 +10,7 @@
 pub mod error;
 pub mod event_loop;
 pub mod socket;
+pub mod live;
 
 use crate::error::ClientError;
 use barter::execution::FillEvent;

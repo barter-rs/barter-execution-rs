@@ -11,9 +11,9 @@ use tracing::{trace, warn};
 
 pub type WsStream = tokio_tungstenite::WebSocketStream<MaybeTlsStream<TcpStream>>;
 
-struct DefaultWebSocketParser;
+pub struct WebSocketParser;
 
-impl<ExchangeMessage> ProtocolParser<ExchangeMessage> for DefaultWebSocketParser
+impl<ExchangeMessage> ProtocolParser<ExchangeMessage> for WebSocketParser
 where
     ExchangeMessage: DeserializeOwned,
 {

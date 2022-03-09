@@ -9,6 +9,7 @@ edition = "2021"
 
 # Barter Ecosystem
 barter = {path = "../barter-rs"}
+barter-data = {path = "../barter-data-rs"}
 
 # Logging
 tracing = "0.1.29"
