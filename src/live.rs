@@ -1,8 +1,11 @@
+use crate::socket::{
+    ExchangeSocket, SocketError, Transformer,
+    protocol::websocket::{WebSocketParser, WsStream}
+};
 use barter_data::client::binance::BinanceMessage;
 use barter_data::model::{MarketData, Trade};
+use tokio_tungstenite::tungstenite::Message as WsMessage;
 use tracing::info;
-use crate::socket::{ExchangeSocket, SocketError, Transformer};
-use crate::socket::protocol::websocket::{WebSocketParser, WsStream};
 
 /// Eg/ Get data from the exchange like barter-data-rs
 
@@ -11,7 +14,7 @@ pub struct BinanceRequest;
 pub struct BarterMessage;
 
 pub struct Binance {
-    socket: ExchangeSocket<WsStream, BinanceRequest, WebSocketParser, BinanceTransformer, BinanceMessage, MarketData>
+    socket: ExchangeSocket<WsStream, WsMessage, WebSocketParser, BinanceTransformer, BinanceMessage, MarketData>
 }
 
 pub struct BinanceTransformer;

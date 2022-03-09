@@ -20,9 +20,9 @@ where
 }
 
 #[pin_project]
-pub struct ExchangeSocket<Socket, SinkInput, P, T, ExchangeMessage, Output>
+pub struct ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
 where
-    Socket: Sink<SinkInput> + Stream,
+    Socket: Sink<SocketItem> + Stream,
     P: ProtocolParser<ExchangeMessage>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
@@ -31,16 +31,16 @@ where
     socket: Socket,
     parser: P,
     transformer: T,
-    sink_input_marker: PhantomData<SinkInput>,
+    socket_item_marker: PhantomData<SocketItem>,
     exchange_message_marker: PhantomData<ExchangeMessage>,
     output_marker: PhantomData<Output>,
 }
 
-impl<Socket, SinkItem, StreamItem, P, T, ExchangeMessage, Output> Stream
-    for ExchangeSocket<Socket, SinkItem, P, T, ExchangeMessage, Output>
+impl<Socket, SocketItem, P, T, ExchangeMessage, Output> Stream
+    for ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
 where
-    Socket: Sink<SinkItem> + Stream<Item = StreamItem>,
-    P: ProtocolParser<ExchangeMessage, Input = StreamItem>,
+    Socket: Sink<SocketItem> + Stream<Item = SocketItem>,
+    P: ProtocolParser<ExchangeMessage, Input = SocketItem>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
@@ -75,11 +75,11 @@ where
     }
 }
 
-impl<Socket, SinkItem, StreamItem, P, T, ExchangeMessage, Output> Sink<SinkItem>
-    for ExchangeSocket<Socket, SinkItem, P, T, ExchangeMessage, Output>
+impl<Socket, SocketItem, P, T, ExchangeMessage, Output> Sink<SocketItem>
+    for ExchangeSocket<Socket, SocketItem, P, T, ExchangeMessage, Output>
 where
-    Socket: Sink<SinkItem> + Stream<Item = StreamItem>,
-    P: ProtocolParser<ExchangeMessage, Input = StreamItem>,
+    Socket: Sink<SocketItem> + Stream<Item = SocketItem>,
+    P: ProtocolParser<ExchangeMessage, Input = SocketItem>,
     T: Transformer<ExchangeMessage, Output>,
     ExchangeMessage: DeserializeOwned,
 {
@@ -89,7 +89,7 @@ where
         self.project().socket.poll_ready(cx).map_err(|_| SocketError::SinkError)
     }
 
-    fn start_send(self: Pin<&mut Self>, item: SinkItem) -> Result<(), Self::Error> {
+    fn start_send(self: Pin<&mut Self>, item: SocketItem) -> Result<(), Self::Error> {
         self.project().socket.start_send(item).map_err(|_| SocketError::SinkError)
     }
 
