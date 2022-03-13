@@ -28,6 +28,7 @@ type ClientResult<T> = Result<T, ClientError>;
 //         receiving remote commands
 // Todo: Work through cancel order because it may be clearer since it 'always get filled'
 // Todo: Start having a look at futures docs to get a flavour for it
+// Todo: Where does the resulting exchange Response get sent in the case of an async OpenOrder Command
 
 pub enum Command {
     OpenOrder((OrderEvent, oneshot::Sender<ClientResult<FillEvent>>)),
@@ -35,7 +36,9 @@ pub enum Command {
 
 #[async_trait]
 pub trait ExecutionClient {
+    // Todo: Why Result<Option<T>>>? For barter trait compatibility?
     async fn open_order(&self, request: OrderEvent) -> ClientResult<Option<FillEvent>>;
+    async fn cancel_order(&self, request: OrderCancelEvent) -> ClientResult<Option<String>>;
 }
 
 #[cfg(test)]
