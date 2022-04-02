@@ -1,16 +1,14 @@
-///! # Barter-Execution
-
-#[warn(
+#![warn(
     missing_debug_implementations,
     missing_copy_implementations,
-    // rust_2018_idioms,
+    rust_2018_idioms,
     // missing_docs
 )]
 
+///! # Barter-Execution
+
 pub mod error;
 pub mod event_loop;
-pub mod socket;
-pub mod live;
 
 use crate::error::ClientError;
 use barter::execution::FillEvent;
@@ -30,6 +28,10 @@ type ClientResult<T> = Result<T, ClientError>;
 // Todo: Start having a look at futures docs to get a flavour for it
 // Todo: Where does the resulting exchange Response get sent in the case of an async OpenOrder Command
 
+#[derive(Copy, Clone, Debug)]
+pub struct OrderCancelEvent;
+
+#[derive(Debug)]
 pub enum Command {
     OpenOrder((OrderEvent, oneshot::Sender<ClientResult<FillEvent>>)),
 }

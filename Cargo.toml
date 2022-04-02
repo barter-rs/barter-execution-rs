@@ -1,5 +1,5 @@
 [package]
-name = "barter-execution-rs"
+name = "barter-execution"
 version = "0.1.0"
 edition = "2021"
 
@@ -8,8 +8,9 @@ edition = "2021"
 [dependencies]
 
 # Barter Ecosystem
-barter = {path = "../barter-rs"}
-barter-data = {path = "../barter-data-rs"}
+barter = { path = "../barter-rs" }
+barter-integration = { path = "../barter-integration-rs" }
+barter-data = { path = "../barter-data-rs" }
 
 # Logging
 tracing = "0.1.29"
