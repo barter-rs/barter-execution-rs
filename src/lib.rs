@@ -8,7 +8,6 @@
 ///! # Barter-Execution
 
 pub mod error;
-pub mod event_loop;
 
 use crate::error::ClientError;
 use barter::execution::FillEvent;
@@ -17,16 +16,6 @@ use async_trait::async_trait;
 use tokio::sync::oneshot;
 
 type ClientResult<T> = Result<T, ClientError>;
-
-// Todo: Could have an ExecutionClient that relies on an ExchangeClient? That way the Trader.run()
-//       event loop still calls self.execution.open_order() & keeps generic w/ layer of abstraction.
-//       '--> This would also allow the ExecutionClient to keep spawning an event loop if there are
-//            failures!
-// Todo: Trader would have a notification_rx and would self.receive_notifications() just below
-//         receiving remote commands
-// Todo: Work through cancel order because it may be clearer since it 'always get filled'
-// Todo: Start having a look at futures docs to get a flavour for it
-// Todo: Where does the resulting exchange Response get sent in the case of an async OpenOrder Command
 
 #[derive(Copy, Clone, Debug)]
 pub struct OrderCancelEvent;

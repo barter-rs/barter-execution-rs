@@ -6,11 +6,10 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-
 # Barter Ecosystem
-barter = { path = "../barter-rs" }
-barter-integration = { path = "../barter-integration-rs" }
-barter-data = { path = "../barter-data-rs" }
+barter = "0.7.2"
+barter-integration = "0.2.2"
+barter-data = "0.4.4"
 
 # Logging
 tracing = "0.1.29"
@@ -21,11 +20,10 @@ tokio-stream = { version = "0.1.7", features = ["sync"] }
 tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
 futures = "0.3.19"
 async-trait = "0.1.52"
-pin-project = "1.0.10"
-
-# Error
-thiserror = "1.0.30"
 
 # SerDe
 serde = { version = "1.0.130", features = ["derive"] }
 serde_json = "1.0.68"
+
+# Error
+thiserror = "1.0.30"
