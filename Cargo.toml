@@ -1,0 +1,29 @@
+[package]
+name = "barter-execution"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+# Barter Ecosystem
+barter = "0.7.2"
+barter-integration = "0.2.2"
+barter-data = "0.4.4"
+
+# Logging
+tracing = "0.1.29"
+
+# Async
+tokio = { version = "1.14.0", features = ["full"] }
+tokio-stream = { version = "0.1.7", features = ["sync"] }
+tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
+futures = "0.3.19"
+async-trait = "0.1.52"
+
+# SerDe
+serde = { version = "1.0.130", features = ["derive"] }
+serde_json = "1.0.68"
+
+# Error
+thiserror = "1.0.30"
