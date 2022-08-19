@@ -1,5 +1,5 @@
 use thiserror::Error;
-use barter_integration::socket::error::SocketError;
+use barter_integration::error::SocketError;
 
 #[derive(Error, Debug)]
 pub enum ClientError {
