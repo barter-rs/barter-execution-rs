@@ -5,52 +5,47 @@
     // missing_docs
 )]
 
+use self::model::{ConnectionStatus};
+use barter_integration::model::Instrument;
+
 ///! # Barter-Execution
+
+/// Contains `ExchangeClient` implementations for specific exchanges.
+pub mod exchange;
 
 pub mod error;
 pub mod event_loop;
+pub mod model;
+pub mod simulated;
 
-use crate::error::ClientError;
-use barter::execution::FillEvent;
-use barter::portfolio::OrderEvent;
-use async_trait::async_trait;
-use tokio::sync::oneshot;
+/// Responsibilities:
+/// - Determines best way to action an [`ExchangeRequest`] given the constraints of the exchange.
+pub trait ExchangeClient {
+    fn instruments(&self) -> &[Instrument];
+    fn connection_status(&self) -> ConnectionStatus;
 
-type ClientResult<T> = Result<T, ClientError>;
+    fn fetch_orders_open(&self) -> ();
+    fn fetch_balances(&self) -> ();
 
-// Todo: Could have an ExecutionClient that relies on an ExchangeClient? That way the Trader.run()
-//       event loop still calls self.execution.open_order() & keeps generic w/ layer of abstraction.
-//       '--> This would also allow the ExecutionClient to keep spawning an event loop if there are
-//            failures!
-// Todo: Trader would have a notification_rx and would self.receive_notifications() just below
-//         receiving remote commands
-// Todo: Work through cancel order because it may be clearer since it 'always get filled'
-// Todo: Start having a look at futures docs to get a flavour for it
-// Todo: Where does the resulting exchange Response get sent in the case of an async OpenOrder Command
+    fn open_order(&self) -> ();
+    fn open_order_batch(&self) -> ();
 
-#[derive(Copy, Clone, Debug)]
-pub struct OrderCancelEvent;
-
-#[derive(Debug)]
-pub enum Command {
-    OpenOrder((OrderEvent, oneshot::Sender<ClientResult<FillEvent>>)),
+    fn cancel_order_by_id(&self) -> ();
+    fn cancel_order_by_instrument(&self) -> ();
+    fn cancel_order_by_batch(&self) -> ();
+    fn cancel_order_all(&self) -> ();
 }
 
-#[async_trait]
-pub trait ExecutionClient {
-    // Todo: Why Result<Option<T>>>? For barter trait compatibility?
-    async fn open_order(&self, request: OrderEvent) -> ClientResult<Option<FillEvent>>;
-    async fn cancel_order(&self, request: OrderCancelEvent) -> ClientResult<Option<String>>;
-}
+
 
 #[cfg(test)]
 mod tests {
-    use super::*;
 
-    #[test]
-    fn test() {
+    #[tokio::test]
+    async fn it_works() {
 
 
 
     }
+
 }

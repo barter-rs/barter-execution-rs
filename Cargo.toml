@@ -8,24 +8,27 @@ edition = "2021"
 [dependencies]
 
 # Barter Ecosystem
-barter = { path = "../barter-rs" }
-barter-integration = { path = "../barter-integration-rs" }
-barter-data = { path = "../barter-data-rs" }
+barter-integration = "0.3.4"
 
 # Logging
-tracing = "0.1.29"
+tracing = "0.1.36"
 
 # Async
-tokio = { version = "1.14.0", features = ["full"] }
-tokio-stream = { version = "0.1.7", features = ["sync"] }
+tokio = { version = "1.20.1", features = ["full"] }
+tokio-stream = { version = "0.1.9", features = ["sync"] }
 tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
-futures = "0.3.19"
-async-trait = "0.1.52"
+futures = "0.3.21"
+async-trait = "0.1.57"
 pin-project = "1.0.10"
+reqwest = { version = "0.11.7", features = ["rustls-tls", "json"] }
 
 # Error
-thiserror = "1.0.30"
+thiserror = "1.0.32"
 
 # SerDe
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.68"
+serde = { version = "1.0.143", features = ["derive"] }
+serde_json = "1.0.83"
+
+# Misc
+chrono = "0.4.22"
+uuid = {version = "0.8.2", features = ["v4", "serde"]}
