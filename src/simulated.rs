@@ -1,19 +1,20 @@
 use std::{
-    time::Duration,
-    collections::HashMap
+    collections::HashMap,
+    time::Duration
 };
 use crate::{
-    ConnectionStatus, ExchangeClient,
+    ConnectionStatus,
     model::ClientOrderId,
 };
 use barter_integration::model::{Instrument, Side, Symbol};
 
-
+#[derive(Clone, Debug)]
 pub struct Config {
     fees: (),
     latency: Duration,
 }
 
+#[derive(Clone, Debug)]
 pub struct SimulatedExchange {
     pub config: Config,
     pub connection_status: ConnectionStatus,
@@ -22,57 +23,15 @@ pub struct SimulatedExchange {
     pub balances: HashMap<Symbol, Balance>,
 }
 
+#[derive(Clone, Debug)]
 pub struct Balance {
     pub total: f64,
     pub available: f64,
 }
 
+#[derive(Clone, Debug)]
 pub struct Order {
     pub direction: Side,
     pub price: f64,
     pub quantity: f64,
-}
-
-
-
-impl ExchangeClient for SimulatedExchange {
-    fn instruments(&self) -> &[Instrument] {
-        &self.instruments
-    }
-
-    fn connection_status(&self) -> ConnectionStatus {
-        self.connection_status
-    }
-
-    fn fetch_orders_open(&self) -> () {
-
-    }
-
-    fn fetch_balances(&self) -> () {
-        todo!()
-    }
-
-    fn open_order(&self) -> () {
-        todo!()
-    }
-
-    fn open_order_batch(&self) -> () {
-        todo!()
-    }
-
-    fn cancel_order_by_id(&self) -> () {
-        todo!()
-    }
-
-    fn cancel_order_by_instrument(&self) -> () {
-        todo!()
-    }
-
-    fn cancel_order_by_batch(&self) -> () {
-        todo!()
-    }
-
-    fn cancel_order_all(&self) -> () {
-        todo!()
-    }
 }
