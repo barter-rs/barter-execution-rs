@@ -1,13 +1,13 @@
+use barter_integration::model::Symbol;
+use serde::{Deserialize, Serialize};
 
-
-
-#[derive(Debug, Clone)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct SymbolBalance {
     pub symbol: Symbol,
     pub balance: Balance,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Balance {
     pub total: f64,
     pub available: f64,

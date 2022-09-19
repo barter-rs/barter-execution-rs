@@ -1,5 +1,13 @@
+use super::{
+    ClientOrderId,
+};
+use barter_integration::{
+    model::{Exchange, Instrument, Side},
+};
+use serde::{Deserialize, Serialize};
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize, Serialize)]
+
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Order<State> {
     pub exchange: Exchange,
     pub instrument: Instrument,
@@ -7,7 +15,7 @@ pub struct Order<State> {
     pub state: State,
 }
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize, Serialize)]
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct RequestOpen {
     pub kind: OrderKind,
     pub side: Side,
@@ -29,7 +37,7 @@ pub struct InFlight;
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct RequestCancel;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Open {
     pub id: OrderId,
     pub side: Side,
@@ -41,13 +49,13 @@ pub struct Open {
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct Cancelled;
 
-#[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
+#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
 pub struct OrderId(pub String);
 
 impl OrderId {
     pub fn new<S>(id: S) -> Self
-        where
-            S: Into<String>
+    where
+        S: Into<String>
     {
         Self(id.into())
     }

@@ -9,12 +9,16 @@
 ///! Todo:
 
 use crate::{
-    model::AccountEvent
+    error::ExecutionError,
+    model::{
+        AccountEvent,
+        balance::SymbolBalance,
+        order::{Order, RequestOpen, RequestCancel},
+    }
 };
-use barter_integration::model::Instrument;
 use tokio::sync::mpsc;
 use async_trait::async_trait;
-use crate::error::ExecutionError;
+use serde::{Deserialize, Serialize};
 
 /// Contains `ExchangeClient` implementations for specific exchanges.
 pub mod exchange;
