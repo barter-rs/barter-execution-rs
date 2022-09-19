@@ -35,14 +35,8 @@ pub trait ExecutionClient {
     async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self;
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
     async fn fetch_balances(&self) -> Result<Vec<SymbolBalance>, ExecutionError>;
-    async fn open_orders(
-        &self,
-        open_requests: Vec<Order<RequestOpen>>,
-    ) -> Result<Vec<Order<Open>>, ExecutionError>;
-    async fn cancel_orders(
-        &self,
-        cancel_requests: Vec<Order<RequestCancel>>,
-    ) -> Result<Vec<OrderId>, ExecutionError>;
+    async fn open_orders(&self, open_requests: Vec<Order<RequestOpen>>) -> Result<Vec<Order<Open>>, ExecutionError>;
+    async fn cancel_orders(&self, cancel_requests: Vec<Order<RequestCancel>>) -> Result<Vec<OrderId>, ExecutionError>;
     async fn cancel_orders_all(&self) -> Result<(), ExecutionError>;
 }
 
