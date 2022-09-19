@@ -1,11 +1,9 @@
 use self::{
     balance::SymbolBalance,
-    order::{Order, Open, Cancelled},
+    order::{Cancelled, Open, Order},
     trade::Trade,
 };
-use barter_integration::{
-    model::{Exchange}
-};
+use barter_integration::model::Exchange;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;

@@ -1,11 +1,7 @@
-use std::fmt::{Display, Formatter};
-use super::{
-    ClientOrderId,
-};
-use barter_integration::{
-    model::{Exchange, Instrument, Side},
-};
+use super::ClientOrderId;
+use barter_integration::model::{Exchange, Instrument, Side};
 use serde::{Deserialize, Serialize};
+use std::fmt::{Display, Formatter};
 
 /// Todo:
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize, Serialize)]
@@ -32,17 +28,21 @@ pub enum OrderKind {
     Market,
     Limit,
     PostOnly,
-    ImmediateOrCancel
+    ImmediateOrCancel,
 }
 
 impl Display for OrderKind {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", match self {
-            OrderKind::Market => "market",
-            OrderKind::Limit => "limit",
-            OrderKind::PostOnly => "post_only",
-            OrderKind::ImmediateOrCancel => "immediate_or_cancel",
-        })
+        write!(
+            f,
+            "{}",
+            match self {
+                OrderKind::Market => "market",
+                OrderKind::Limit => "limit",
+                OrderKind::PostOnly => "post_only",
+                OrderKind::ImmediateOrCancel => "immediate_or_cancel",
+            }
+        )
     }
 }
 
@@ -93,7 +93,7 @@ impl From<&Order<RequestOpen>> for Order<InFlight> {
             exchange: request.exchange.clone(),
             instrument: request.instrument.clone(),
             cid: request.cid,
-            state: InFlight
+            state: InFlight,
         }
     }
 }

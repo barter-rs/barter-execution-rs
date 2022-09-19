@@ -7,25 +7,24 @@
 
 ///! # Barter-Execution
 ///! Todo:
-
 use crate::{
     error::ExecutionError,
     model::{
-        AccountEvent,
         balance::SymbolBalance,
-        order::{Order, RequestOpen, Open, OrderId, RequestCancel},
-    }
+        order::{Open, Order, OrderId, RequestCancel, RequestOpen},
+        AccountEvent,
+    },
 };
-use tokio::sync::mpsc;
 use async_trait::async_trait;
 use serde::{Deserialize, Serialize};
+use tokio::sync::mpsc;
 
-/// Contains `ExchangeClient` implementations for specific exchanges.
-pub mod exchange;
+pub mod builder;
 /// Todo:
 pub mod error;
+/// Contains `ExchangeClient` implementations for specific exchanges.
+pub mod exchange;
 pub mod model;
-pub mod builder;
 
 // Todo:
 //  - Add Health/ClientStatus to Client, AccountEvent, etc.
@@ -36,8 +35,14 @@ pub trait ExecutionClient {
     async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self;
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
     async fn fetch_balances(&self) -> Result<Vec<SymbolBalance>, ExecutionError>;
-    async fn open_orders(&self, open_requests: Vec<Order<RequestOpen>>) -> Result<Vec<Order<Open>>, ExecutionError>;
-    async fn cancel_orders(&self, cancel_requests: Vec<Order<RequestCancel>>) -> Result<Vec<OrderId>, ExecutionError>;
+    async fn open_orders(
+        &self,
+        open_requests: Vec<Order<RequestOpen>>,
+    ) -> Result<Vec<Order<Open>>, ExecutionError>;
+    async fn cancel_orders(
+        &self,
+        cancel_requests: Vec<Order<RequestCancel>>,
+    ) -> Result<Vec<OrderId>, ExecutionError>;
     async fn cancel_orders_all(&self) -> Result<(), ExecutionError>;
 }
 
