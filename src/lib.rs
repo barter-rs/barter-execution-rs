@@ -13,7 +13,7 @@ use crate::{
     model::{
         AccountEvent,
         balance::SymbolBalance,
-        order::{Order, RequestOpen, RequestCancel},
+        order::{Order, RequestOpen, Open, OrderId, RequestCancel},
     }
 };
 use tokio::sync::mpsc;
@@ -28,17 +28,17 @@ pub mod model;
 pub mod builder;
 
 // Todo:
-//  - Add Health/ClientStatus
+//  - Add Health/ClientStatus to Client, AccountEvent, etc.
 
 #[async_trait]
 pub trait ExecutionClient {
     type Config;
     async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self;
-    async fn fetch_orders_open(&self) -> Result<Vec<Order<()>>, ExecutionError>;
+    async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
     async fn fetch_balances(&self) -> Result<Vec<SymbolBalance>, ExecutionError>;
-    async fn open_orders(&self, open_requests: Vec<Order<RequestOpen>>) -> Result<Vec<Order<()>>, ExecutionError>;
-    async fn cancel_orders(&self, cancel_requests: Vec<Order<RequestCancel>>) -> Result<Vec<Order<()>>, ExecutionError>;
-    async fn cancel_orders_all(&self) -> Result<Vec<Order<()>>, ExecutionError>;
+    async fn open_orders(&self, open_requests: Vec<Order<RequestOpen>>) -> Result<Vec<Order<Open>>, ExecutionError>;
+    async fn cancel_orders(&self, cancel_requests: Vec<Order<RequestCancel>>) -> Result<Vec<OrderId>, ExecutionError>;
+    async fn cancel_orders_all(&self) -> Result<(), ExecutionError>;
 }
 
 /// Used to uniquely identify an [`ExecutionClient`] implementation.
