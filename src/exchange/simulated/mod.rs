@@ -1,109 +1,84 @@
-use crate::{AccountEvent, ExecutionClient, ExecutionError, model::{
-    ClientOrderId,
-    order::{Order, Open},
-    balance::Balance,
-}, OrderId, RequestCancel, RequestOpen, SymbolBalance};
-use barter_integration::model::{Instrument, Symbol};
-use std::{
-    collections::HashMap,
-    time::Duration,
+use crate::{
+    AccountEvent, ExecutionClient, ExecutionError, OrderId, RequestCancel, RequestOpen, SymbolBalance, simulated,
+    ClientId,
+    model::{
+        order::{Order, Open}
+    },
 };
-use std::sync::Arc;
+use std::{
+    sync::Arc
+};
 use async_trait::async_trait;
 use parking_lot::RwLock;
 use tokio::sync::mpsc;
-use serde::{Deserialize, Serialize};
-
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-pub struct Config {
-    pub instruments: Vec<Instrument>,
-    pub balances: HashMap<Symbol, Balance>,
-    pub fees_percent: f64,
-    pub latency: Duration,
-}
+use tracing::warn;
 
 #[derive(Debug)]
 struct SimulatedExecution {
     pub event_tx: mpsc::UnboundedSender<AccountEvent>,
-    pub fees_percent: f64,
-    pub latency: Duration,
-    pub balances: HashMap<Symbol, Balance>,
-    pub markets: HashMap<Instrument, SimulatedMarket>,
-}
-
-#[derive(Debug, Default)]
-struct SimulatedMarket {
-    client_orders: HashMap<ClientOrderId, Order<Open>>,
+    pub exchange: Arc<RwLock<simulated::Exchange>>,
 }
 
 #[async_trait]
 impl ExecutionClient for SimulatedExecution {
-    type Config = Config;
+    const CLIENT: ClientId = ClientId::Simulated;
+    type Config = Arc<RwLock<simulated::Exchange>>;
 
-    async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self {
+    async fn init(exchange: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self {
         Self {
             event_tx,
-            fees_percent: config.fees_percent,
-            latency: config.latency,
-            balances: config.balances,
-            markets: config
-                .instruments
-                .into_iter()
-                .map(|instrument| (instrument, SimulatedMarket::default()))
-                .collect::<HashMap<Instrument, SimulatedMarket>>()
+            exchange,
         }
     }
 
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError> {
-        tokio::time::sleep(self.latency).await;
-
-        self.markets
-            .values()
-            .map(|market| market.client_orders.values())
-            .flatten()
-            .cloned()
-            .map(Ok)
-            .collect::<Result<Vec<Order<Open>>, ExecutionError>>()
+        self.exchange
+            .read()
+            .fetch_orders_open()
     }
 
     async fn fetch_balances(&self) -> Result<Vec<SymbolBalance>, ExecutionError> {
-        tokio::time::sleep(self.latency).await;
-
-        self.balances
-            .clone()
-            .into_iter()
-            .map(|(symbol, balance) | Ok(SymbolBalance::new(symbol, balance)))
-            .collect::<Result<Vec<SymbolBalance>, ExecutionError>>()
+        self.exchange
+            .read()
+            .fetch_balances()
     }
 
     async fn open_orders(&self, open_requests: Vec<Order<RequestOpen>>) -> Result<Vec<Order<Open>>, ExecutionError> {
-        tokio::time::sleep(self.latency).await;
+        let open_results = self.exchange
+            .write()
+            .open_orders(open_requests);
 
-        // If Market,
-
-        todo!()
+        open_results
+            .into_iter()
+            .map(|open_result| {
+                if let Err(error) = &open_result {
+                    warn!(client = %Self::CLIENT, ?error, "failed to open order")
+                }
+                open_result
+            })
+            .collect::<Result<Vec<_>, ExecutionError>>()
     }
 
     async fn cancel_orders(&self, cancel_requests: Vec<Order<RequestCancel>>) -> Result<Vec<OrderId>, ExecutionError> {
-        tokio::time::sleep(self.latency).await;
+        let cancel_results = self.exchange
+            .write()
+            .cancel_orders(cancel_requests);
 
-
-        Ok(())
+        cancel_results
+            .into_iter()
+            .map(|cancel_result| {
+                if let Err(error) = &cancel_result {
+                    warn!(client = %Self::CLIENT, ?error, "failed to cancel order")
+                }
+                cancel_result
+            })
+            .collect::<Result<Vec<_>, ExecutionError>>()
     }
 
     async fn cancel_orders_all(&self) -> Result<(), ExecutionError> {
-        tokio::time::sleep(self.latency).await;
-
-        // Todo: Exchange needs to be on separate thread due to due &self requirement of client
-        self.markets
-            .values()
-            .map(|mut market| market.client_orders.drain())
-            .flatten()
-            .for_each(|(id, order)| {
-
-            })
-
-        Ok(())
+        self.exchange
+            .write()
+            .cancel_orders_all()
     }
 }
 

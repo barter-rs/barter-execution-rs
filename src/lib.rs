@@ -5,6 +5,7 @@
     // missing_docs
 )]
 
+use std::fmt::{Display, Formatter};
 ///! # Barter-Execution
 ///! Todo:
 use crate::{
@@ -25,12 +26,17 @@ pub mod error;
 /// Contains `ExchangeClient` implementations for specific exchanges.
 pub mod exchange;
 pub mod model;
+pub mod simulated;
 
 // Todo:
 //  - Add Health/ClientStatus to Client, AccountEvent, etc.
+//  - Perhaps we want a `cancel_orders_instrument()` with matching ExecutionRequest
+//    '--> Or cancel_orders_all(instrument: Option<Instrument>)
+//  - Vec<Result> or Result<Vec> for batch open & cancels?
 
 #[async_trait]
 pub trait ExecutionClient {
+    const CLIENT: ClientId;
     type Config;
     async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self;
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
@@ -46,4 +52,19 @@ pub trait ExecutionClient {
 pub enum ClientId {
     Simulated,
     Ftx,
+}
+
+impl Display for ClientId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.as_str())
+    }
+}
+
+impl ClientId {
+    pub fn as_str(&self) -> &'static str {
+        match self {
+            ClientId::Simulated => "simulated",
+            ClientId::Ftx => "ftx"
+        }
+    }
 }
