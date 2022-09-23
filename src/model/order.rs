@@ -1,10 +1,11 @@
+use std::cmp::Ordering;
 use super::ClientOrderId;
 use barter_integration::model::{Exchange, Instrument, Side};
 use serde::{Deserialize, Serialize};
 use std::fmt::{Display, Formatter};
 
 /// Todo:
-#[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Deserialize, Serialize)]
+#[derive(Clone, Eq, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub struct Order<State> {
     pub exchange: Exchange,
     pub instrument: Instrument,
@@ -56,7 +57,7 @@ pub struct InFlight;
 pub struct RequestCancel;
 
 /// Todo:
-#[derive(Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
+#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct Open {
     pub id: OrderId,
     pub side: Side,
@@ -64,6 +65,33 @@ pub struct Open {
     pub quantity: f64,
     pub filled_quantity: f64,
 }
+
+impl Open {
+    pub fn remaining_quantity(&self) -> f64 {
+        self.quantity - self.filled_quantity
+    }
+}
+
+impl Ord for Order<Open> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        // Todo: Order by Amount too
+        self.state
+            .price
+            .partial_cmp(&other.state.price)
+            .expect(&format!("{}.partial_cmp({}) impossible", self.state.price, other.state.price))
+    }
+}
+
+impl PartialOrd for Order<Open> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        match self.state.price.partial_cmp(&other.state.price)? {
+            Ordering::Equal => self.state.quantity.partial_cmp(&other.state.quantity),
+            non_equal => Some(non_equal),
+        }
+    }
+}
+
+impl Eq for Order<Open> {}
 
 /// State of an [`Order`] after being [`Cancelled`].
 #[derive(Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
@@ -96,4 +124,102 @@ impl From<&Order<RequestOpen>> for Order<InFlight> {
             state: InFlight,
         }
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::test_util::order_open;
+
+    #[test]
+    fn test_partial_ord_order_open() {
+        struct TestCase {
+            input_one: Order<Open>,
+            input_two: Order<Open>,
+            expected: Option<Ordering>,
+        }
+
+        let cases = vec![
+            TestCase { // TC0: Input One has higher price and higher quantity -> Greater
+                input_one: order_open(Side::Buy, 1100.0, 2.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                expected: Some(Ordering::Greater)
+            },
+            TestCase { // TC1: Input One has higher price but same quantity -> Greater
+                input_one: order_open(Side::Buy, 1100.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                expected: Some(Ordering::Greater)
+            },
+            TestCase { // TC2: Input One has higher price but lower quantity -> Greater
+                input_one: order_open(Side::Buy, 1100.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 2.0, 0.0),
+                expected: Some(Ordering::Greater)
+            },
+            TestCase { // TC3: Input One has same price and higher quantity -> Greater
+                input_one: order_open(Side::Buy, 1000.0, 2.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                expected: Some(Ordering::Greater)
+            },
+            TestCase { // TC4: Input One has same price and same quantity -> Equal
+                input_one: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                expected: Some(Ordering::Equal)
+            },
+            TestCase { // TC5: Input One has same price but lower quantity -> Less
+                input_one: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1000.0, 2.0, 0.0),
+                expected: Some(Ordering::Less)
+            },
+            TestCase { // TC6: Input One has lower price but higher quantity -> Less
+                input_one: order_open(Side::Buy, 1000.0, 2.0, 0.0),
+                input_two: order_open(Side::Buy, 1100.0, 1.0, 0.0),
+                expected: Some(Ordering::Less)
+            },
+            TestCase { // TC7: Input One has lower price and same quantity -> Less
+                input_one: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1100.0, 1.0, 0.0),
+                expected: Some(Ordering::Less)
+            },
+            TestCase { // TC8: Input One has lower price but lower quantity -> Less
+                input_one: order_open(Side::Buy, 1000.0, 1.0, 0.0),
+                input_two: order_open(Side::Buy, 1100.0, 2.0, 0.0),
+                expected: Some(Ordering::Less)
+            },
+        ];
+
+        for (index, test) in cases.into_iter().enumerate() {
+            let actual = test.input_one.partial_cmp(&test.input_two);
+            match (actual, test.expected) {
+                (None, None) => {
+                    // Test passed
+                }
+                (Some(actual), Some(expected)) => {
+                    assert_eq!(actual, expected, "TC{} failed", index)
+                },
+                (actual, expected) => {
+                    // Test failed
+                    panic!("TC{index} failed because actual != expected. \nActual: {actual:?}\nExpected: {expected:?}\n");
+                }
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 }

@@ -68,3 +68,28 @@ impl ClientId {
         }
     }
 }
+
+pub mod test_util {
+    use crate::{
+        Open, Order, OrderId,
+        model::ClientOrderId
+    };
+    use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side};
+    use barter_data::ExchangeId;
+    use uuid::Uuid;
+
+    pub fn order_open(side: Side, price: f64, quantity: f64, filled: f64) -> Order<Open> {
+        Order {
+            exchange: Exchange::from("exchange"),
+            instrument: Instrument::from(("btc", "usdt", InstrumentKind::FuturePerpetual)),
+            cid: ClientOrderId(Uuid::new_v4()),
+            state: Open {
+                id: OrderId::from("id"),
+                side,
+                price,
+                quantity,
+                filled_quantity: filled
+            }
+        }
+    }
+}

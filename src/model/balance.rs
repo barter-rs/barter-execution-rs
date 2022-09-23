@@ -26,6 +26,13 @@ pub struct Balance {
 }
 
 impl Balance {
+    /// Construct a new [`Balance`].
+    pub fn new(total: f64, available: f64) -> Self {
+        Self { total, available }
+    }
+}
+
+impl Balance {
     /// Calculate the used (`total` - `available`) balance.
     pub fn used(&self) -> f64 {
         self.total - self.available
