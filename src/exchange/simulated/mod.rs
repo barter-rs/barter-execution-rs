@@ -10,7 +10,7 @@ use async_trait::async_trait;
 use tokio::sync::{mpsc, oneshot};
 use tracing::warn;
 
-
+/// Todo:
 #[derive(Clone, Debug)]
 struct SimulatedExecution {
     pub request_tx: mpsc::UnboundedSender<SimulatedEvent>,
@@ -124,25 +124,3 @@ impl ExecutionClient for SimulatedExecution {
             .expect("SimulatedExchange is offline - failed to receive CancelOrdersAll response")
     }
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

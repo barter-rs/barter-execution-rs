@@ -66,6 +66,14 @@ pub struct Open {
     pub filled_quantity: f64,
 }
 
+// Buy a quantity of base for some quote price
+// eg/ Market Buy 1.0 btc at 100 usdt price
+// Ergo, increases btc by 1, decreases usdt by (1 * 100)
+
+// Sell a quantity of base for some quote price
+// eg/ Market Sell 1.0 btc at 100 usdt price
+// Ergo, decreases btc by 1, increases usdt by (1 * 100)
+
 impl Open {
     pub fn remaining_quantity(&self) -> f64 {
         self.quantity - self.filled_quantity

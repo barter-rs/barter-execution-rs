@@ -45,43 +45,43 @@ pub struct ClientOrders {
 
 impl Exchange {
     pub async fn run(self: Arc<Self>) {
-        // while let Some(market) = self.trade_rx.write().recv().await {
-        //     // Get ClientOrders associated with input MarketEvent
-        //     let client_orders = self.client_orders(&market.instrument);
-        //
-        //     // Extract MarketEvent PublicTrade
-        //     let trade = match market.kind {
-        //         DataKind::Trade(trade) => trade,
-        //         _ => continue
-        //     };
-        //
-        //     // Check if there is a matching client bid
-        //     if Self::is_matching_bid(client_orders, &trade) {
-        //         self.fill_bids(client_orders, &trade);
-        //     }
-        //
-        //     // Check if there is a matching client bid
-        //     if Self::is_matching_ask(client_orders, &trade) {
-        //         self.fill_bids(client_orders, &trade);
-        //     }
-        //
-        //     // Asks
-        //     if let Some(order) = client_orders.asks.peek() {
-        //         if order.state.price <= trade.price {
-        //
-        //             client_orders.asks.
-        //
-        //             // match
-        //         }
-        //     }
-        //
-        //
-        //     match (client_orders.bids.peek(), client_orders.asks.peek()) {
-        //         (Some(), _) => {}
-        //     }
-        //
-        //     println!("{market:?}");
-        // };
+        while let Some(market) = self.trade_rx.write().recv().await {
+            // Get ClientOrders associated with input MarketEvent
+            let client_orders = self.client_orders(&market.instrument);
+
+            // Extract MarketEvent PublicTrade
+            let trade = match market.kind {
+                DataKind::Trade(trade) => trade,
+                _ => continue
+            };
+
+            // Check if there is a matching client bid
+            if Self::is_matching_bid(client_orders, &trade) {
+                self.fill_bids(client_orders, &trade);
+            }
+
+            // Check if there is a matching client bid
+            if Self::is_matching_ask(client_orders, &trade) {
+                self.fill_bids(client_orders, &trade);
+            }
+
+            // Asks
+            if let Some(order) = client_orders.asks.peek() {
+                if order.state.price <= trade.price {
+
+                    client_orders.asks.
+
+                    // match
+                }
+            }
+
+
+            match (client_orders.bids.peek(), client_orders.asks.peek()) {
+                (Some(), _) => {}
+            }
+
+            println!("{market:?}");
+        };
     }
 
     fn client_orders(&self, instrument: &Instrument) -> &RwLock<ClientOrders> {
