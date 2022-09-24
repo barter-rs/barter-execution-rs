@@ -169,6 +169,8 @@ impl SimulatedExchange {
 
     pub fn update_client_account_from_match(&mut self, order: Order<Open>, trade_quantity: f64) {
         // Calculate the quote denominated trade fees
+        // Todo: For simplicity have the fees taken off the incoming symbol, at fill time
+        // Todo: that was a Buy would have base fees, Sell would have quote fees
         let fees = SymbolFees {
             symbol: order.instrument.quote.clone(),
             fees: self.fees_percent * order.state.price * trade_quantity
@@ -229,6 +231,8 @@ impl SimulatedExchange {
 
         // 4a. Partial fill for 0.5 btc for 50 usdt
         // 5a. btc { total: 0.5, available: 0.0 }, usdt { total: 50.0, available: 50.0 }
+
+
 
         let Instrument { base, quote, ..} = &order.instrument;
 
