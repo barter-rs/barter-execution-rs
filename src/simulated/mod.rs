@@ -1,6 +1,6 @@
 use crate::{
     AccountEvent, Open, Order, RequestOpen, RequestCancel, ExecutionError, SymbolBalance, OrderId,
-    model::{ClientOrderId, AccountEventKind, trade::{Trade, TradeId}, balance::Balance},
+    model::{ClientOrderId, AccountEventKind, trade::{Trade, TradeId, SymbolFees}, balance::Balance},
 };
 use barter_integration::model::{Instrument, Side, Symbol};
 use barter_data::model::PublicTrade;
@@ -12,10 +12,7 @@ use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
-use crate::model::trade::SymbolFees;
-
-pub mod matches;
-pub mod engine;
+use num_traits::identities::Zero;
 
 /// Todo:
 #[derive(Debug)]
@@ -40,11 +37,11 @@ pub struct SimulatedExchange {
     pub trade_number: u64,
 }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
-pub struct ClientAccount {
-    balances: HashMap<Symbol, Balance>,
-    orders: HashMap<Instrument, ClientOrders>,
-}
+// #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+// pub struct ClientAccount {
+//     balances: HashMap<Symbol, Balance>,
+//     orders: HashMap<Instrument, ClientOrders>,
+// }
 
 #[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
 pub struct ClientOrders {
@@ -95,66 +92,86 @@ impl SimulatedExchange {
 
     pub fn match_orders(&mut self, instrument: Instrument, trade: PublicTrade) {
         // Get ClientOrders associated with input PublicTrade
-        let mut client_orders = self.client_orders(&instrument);
+        // let mut client_orders = self.client_orders(&instrument);
 
-        if Self::has_matching_bid(client_orders, &trade) {
-            self.match_bids(&mut client_orders, &trade);
+        if self.has_matching_bid(&instrument, &trade) {
+            self.match_bids(&instrument, &trade);
         }
 
-        if Self::has_matching_ask(client_orders, &trade) {
-            // Do matches
-        }
+        // if Self::has_matching_ask(client_orders, &trade) {
+        //     Do matches
+        // }
     }
 
-    fn has_matching_bid(client_orders: &ClientOrders, trade: &PublicTrade) -> bool {
-        match client_orders.bids.last() {
+    fn has_matching_bid(&self, instrument: &Instrument, trade: &PublicTrade) -> bool {
+        match self.client_orders(instrument).bids.last() {
             Some(best_bid) if best_bid.state.price >= trade.price => true,
             _ => false,
         }
     }
 
-    fn match_bids(&mut self, client_orders: &mut ClientOrders, trade: &PublicTrade) {
+    fn client_orders(&self, instrument: &Instrument) -> &ClientOrders {
+        self.markets
+            .get(instrument)
+            .expect("received MarketEvent for unrecognised Instrument")
+    }
+
+    fn client_orders_mut(&mut self, instrument: &Instrument) -> &mut ClientOrders {
+        self.markets
+            .get_mut(instrument)
+            .expect("received MarketEvent for unrecognised Instrument")
+    }
+
+    fn match_bids(&mut self, instrument: &Instrument, trade: &PublicTrade) {
+        // Get bid ClientOrders
+        let client_orders = self.client_orders_mut(instrument);
+
         // Keep track of how much trade liquidity is remaining to match with
         let mut remaining_liquidity = trade.quantity;
 
-        let best_bid = while let Some(mut best_bid) = client_orders.bids.pop() {
+        let best_bid = loop {
+            // Pop the best bid Order<Open>
+            let mut best_bid = match client_orders.bids.pop() {
+                Some(best_bid) => best_bid,
+                None => break None,
+            };
 
-            // If there is no longer a match, or the trade liquidity is exhausted
+            // If current best bid is no longer a match, or the trade liquidity is exhausted
             if best_bid.state.price < trade.price || remaining_liquidity <= 0.0 {
                 break Some(best_bid);
             }
 
-            // Liquidity is either enough for a full-fill or partial fill
+            // Liquidity is either enough for a full-fill or partial-fill
             match Self::fill_kind(&best_bid, remaining_liquidity) {
-                // Exact full Order<Open> fill with zero remaining trade liquidity
-                OrderFill::Full if remaining_liquidity.is_zero() => {
-                    break None
-                }
-
-                // Full Order<Open> fill with remaining trade liquidity,
+                // Full Order<Open> fill
                 OrderFill::Full => {
                     // Remove trade quantity from remaining liquidity
                     let trade_quantity = best_bid.state.remaining_quantity();
                     remaining_liquidity -= trade_quantity;
 
-                    // Update balances & send AccountEvents to Client
-                    self.update_client_account_from_match(best_bid, trade_quantity, );
+                    // Update balances & send AccountEvents to client
+                    self.update_client_account_from_match(best_bid, trade_quantity);
 
+                    // Exact full fill with zero remaining trade liquidity (highly unlikely)
                     if remaining_liquidity.is_zero() {
                         break None
-                    } else {
-                        continue
                     }
                 }
 
                 // Partial Order<Open> fill with zero remaining trade liquidity
                 OrderFill::Partial => {
+                    // Partial-fill means trade quantity is all the remaining trade liquidity
+                    let trade_quantity = remaining_liquidity;
+
+                    // Update balances & send AccountEvents to client
+                    self.update_client_account_from_match(best_bid.clone(), trade_quantity);
+
                     break Some(best_bid)
                 }
             }
         };
 
-        // Push the remaining best bid back into the end of the open bids
+        // If best bid had a partial fill or is no longer a match, push it back onto the end of bids
         if let Some(best_bid) = best_bid {
             client_orders.bids.push(best_bid)
         }
@@ -168,20 +185,13 @@ impl SimulatedExchange {
     }
 
     pub fn update_client_account_from_match(&mut self, order: Order<Open>, trade_quantity: f64) {
-        // Calculate the quote denominated trade fees
-        // Todo: For simplicity have the fees taken off the incoming symbol, at fill time
-        // Todo: that was a Buy would have base fees, Sell would have quote fees
-        let fees = SymbolFees {
-            symbol: order.instrument.quote.clone(),
-            fees: self.fees_percent * order.state.price * trade_quantity
-        };
+        // Calculate the trade fees (denominated in base or quote depending on Order Side)
+        let fees = self.calculate_fees(&order, trade_quantity);
 
         // Generate AccountEvent::Balances by updating the base & quote SymbolBalances
         let balance_event = self.update_balance_from_match(&order, trade_quantity, &fees);
 
         // Generate AccountEvent::Trade for the Order<Open> match
-
-
         let trade_event = AccountEvent {
             received_time: Utc::now(),
             exchange: order.exchange,
@@ -192,7 +202,7 @@ impl SimulatedExchange {
                 side: order.state.side,
                 price: order.state.price,
                 quantity: trade_quantity,
-                fees: trade_fees_quote_denominated
+                fees
             })
         };
 
@@ -203,6 +213,23 @@ impl SimulatedExchange {
         self.event_account_tx
             .send(balance_event)
             .expect("Client is offline - failed to send AccountEvent::Balances");
+    }
+
+    pub fn calculate_fees(&self, order: &Order<Open>, trade_quantity: f64) -> SymbolFees {
+        match order.state.side {
+            Side::Buy => {
+                SymbolFees::new(
+                    order.instrument.base.clone(),
+                    self.fees_percent * trade_quantity
+                )
+            }
+            Side::Sell => {
+                SymbolFees::new(
+                    order.instrument.quote.clone(),
+                    self.fees_percent * order.state.price * trade_quantity
+                )
+            }
+        }
     }
 
     /// [`Order<Open>`] matches (trades) result in the [`Balance`] of the base & quote
@@ -218,9 +245,12 @@ impl SimulatedExchange {
         // Todo: Turn this into template for Side::Buy balance update test case
         // 1. btc { total: 0, available: 0 }, usdt { total: 100, available: 100 }
         // 2. Open order to buy 1 btc for 100 usdt
+        // '--> Fees are taken into account in the opened order, so new balance update is true
         // 3. btc { total: 0, available: 0 }, usdt { total: 100, available: 0 }
         // 4a. Partial Fill for 0.5 btc for 50 usdt
+        // '--> fees taken out of bought 0.5 btc, eg/ fee_percent * 0.5
         // 5a. btc { total: 0.5, available: 0.5 }, usdt { total: 50, available: 0 }
+        // '--> btc total & available = fee_percent * 0.5
         // 4b. Full Fill for 1 btc for 100 usdt
         // 5b. btc { total: 1.0, available: 1.0 }, usdt { total: 0.0, available: 0.0 }
 
@@ -228,10 +258,9 @@ impl SimulatedExchange {
         // 1. btc { total: 1.0, available: 1.0 }, usdt { total: 0.0, available: 0.0 }
         // 2. Open order ot sell 1 btc for 100 usdt
         // 3. btc { total: 1.0, available: 0.0 }, usdt { total: 0.0, available: 0.0 }
-
         // 4a. Partial fill for 0.5 btc for 50 usdt
         // 5a. btc { total: 0.5, available: 0.0 }, usdt { total: 50.0, available: 50.0 }
-
+        // '--> usdt total & available = (trade_quantity * price) - fees
 
 
         let Instrument { base, quote, ..} = &order.instrument;
@@ -244,16 +273,16 @@ impl SimulatedExchange {
         let quote = self
             .balances
             .get_mut(quote)
-            .map(|balance| balance.)
             .expect(&format!("Cannot update Balance for non-configured quote Symbol: {}", quote));
 
 
 
         match order.state.side {
             Side::Buy => {
-                // Base total & available increase by trade_quantity
-                base.total += trade_quantity;
-                base.available += trade_quantity;
+                // Base total & available increase by trade_quantity minus base fees
+                let base_increase = trade_quantity - fees.fees;
+                base.total += base_increase;
+                base.available += base_increase;
 
                 // Quote total decreases by (trade_quantity * price)
                 // Note: available was already decreased by the opening of the Side::Buy order
@@ -265,10 +294,10 @@ impl SimulatedExchange {
                 // Note: available was already decreased by the opening of the Side::Sell order
                 base.total -= trade_quantity;
 
-                // Quote total & available increase by (trade_quantity * price)
-                let delta_increase = trade_quantity * order.state.price;
-                quote.total += delta_increase;
-                quote.available += delta_increase
+                // Quote total & available increase by (trade_quantity * price) minus quote fees
+                let quote_increase = (trade_quantity * order.state.price) - fees.fees;
+                quote.total += quote_increase;
+                quote.available += quote_increase
             }
         }
 
@@ -276,15 +305,15 @@ impl SimulatedExchange {
             received_time: Utc::now(),
             exchange: order.exchange.clone(),
             kind: AccountEventKind::Balances(vec![
-                SymbolBalance::new(order.instrument.base.clone(), base.copy()),
-                SymbolBalance::new(order.instrument.quote.clone(), quote.copy()),
+                SymbolBalance::new(order.instrument.base.clone(), *base),
+                SymbolBalance::new(order.instrument.quote.clone(), *quote),
             ])
         }
     }
 
     fn trade_id(&mut self) -> TradeId {
         self.trade_number += 1;
-        TradeId::from(self.trade_number)
+        TradeId(self.trade_number.to_string())
     }
 
     fn has_matching_ask(client_orders: &ClientOrders, trade: &PublicTrade) -> bool {
@@ -292,12 +321,6 @@ impl SimulatedExchange {
             Some(best_ask) if best_ask.state.price <= trade.price => true,
             _ => false,
         }
-    }
-
-    fn client_orders(&self, instrument: &Instrument) -> &ClientOrders {
-        self.markets
-            .get(instrument)
-            .expect("received MarketEvent for unrecognised Instrument")
     }
 
     pub async fn fetch_orders_open(&self, response_tx: oneshot::Sender<Result<Vec<Order<Open>>, ExecutionError>>) {
@@ -454,4 +477,151 @@ impl SimulatedExchange {
 pub enum OrderFill {
     Full,
     Partial,
+}
+
+#[cfg(test)]
+mod tests {
+    use barter_integration::model::InstrumentKind;
+    use barter_data::builder::Streams;
+    use barter_data::ExchangeId;
+    use barter_data::model::subscription::SubKind;
+    use super::*;
+
+    #[tokio::test]
+    async fn it_works() {
+        let exchange_id = ExchangeId::BinanceFuturesUsd;
+        let instrument = Instrument::from(("btc", "usdt", InstrumentKind::FuturePerpetual));
+
+        let trades = Streams::builder()
+            .subscribe([(exchange_id, instrument.clone(), SubKind::Trade)])
+            .init()
+            .await
+            .expect("failed to initialise Trade stream");
+
+        let (event_account_tx, event_account_rx) = mpsc::unbounded_channel();
+        let (event_simulated_tx, event_simulated_rx) = mpsc::unbounded_channel();
+
+        let exchange = SimulatedExchange {
+            fees_percent: 0.0,
+            latency: Default::default(),
+            event_account_tx,
+            event_simulated_rx,
+            balances: Default::default(),
+            markets: Default::default(),
+            trade_number: 0
+        };
+
+        exchange.run().await;
+    }
+
+    // fn markets(bids: Vec<Order<Open>>, asks: Vec<Order<Open>>) -> HashMap<Instrument, ClientOrders> {
+    //     HashMap::from([(
+    //         Instrument::from(("btc", "usdt", InstrumentKind::FuturePerpetual)),
+    //         client_orders(bids, asks)
+    //     )])
+    // }
+    //
+    // fn client_orders(bids: Vec<Order<Open>>, asks: Vec<Order<Open>>) -> ClientOrders {
+    //     ClientOrders {
+    //         bids: BinaryHeap::from_iter(bids),
+    //         asks: BinaryHeap::from_iter(asks),
+    //     }
+    // }
+    //
+    // fn trade(side: Side, price: f64, quantity: f64) -> MarketEvent {
+    //     MarketEvent {
+    //         exchange_time: Default::default(),
+    //         received_time: Default::default(),
+    //         exchange: Exchange::from("exchange"),
+    //         instrument: Instrument::from(("btc", "usdt", InstrumentKind::FuturePerpetual)),
+    //         kind: DataKind::Trade(PublicTrade {
+    //             id: "id".to_string(),
+    //             price,
+    //             quantity,
+    //             side
+    //         })
+    //     }
+    // }
+    //
+    // fn balances(btc: Balance, usdt: Balance) -> HashMap<Symbol, Balance> {
+    //     HashMap::from_iter([
+    //         (Symbol::from("btc"), btc),
+    //         (Symbol::from("usdt"), usdt),
+    //     ])
+    // }
+    //
+    // #[test]
+    // fn test_match_buy_order_with_input_trades() {
+    //     // Open bid to Buy 1.0 btc for 1000 usdt
+    //     // Open asks to Sell 1.0 btc for 2000 usdt
+    //     let starting_orders = markets(
+    //         vec![order_open(Side::Buy, 1000.0, 1.0, 0.0)],
+    //         vec![order_open(Side::Sell, 2000.0, 1.0, 0.0)]
+    //     );
+    //
+    //     // Available balance reflects the initial open orders
+    //     let starting_balances = balances(
+    //         Balance::new(10.0, 9.0),
+    //         Balance::new(10000.0, 9000.0)
+    //     );
+    //
+    //     let (trade_tx, trade_rx) = mpsc::unbounded_channel();
+    //     let (event_tx, event_rx) = mpsc::unbounded_channel();
+    //
+    //     let simulated = SimulatedExchange {
+    //         balances: starting_balances,
+    //         markets: starting_orders,
+    //         trade_rx,
+    //         event_tx,
+    //     };
+    //
+    //     struct TestCase {
+    //         input_trade: MarketEvent,
+    //         expected_orders: ClientOrders,
+    //         expected_balances: HashMap<Symbol, Balance>,
+    //     }
+    //
+    //     // Todo: What happens if we have a buy and sell order at same price?
+    //
+    //     let cases = vec![
+    //         TestCase {
+    //             // TC0: Trade does not match our open ask of (1.0 for 2000.0), so do nothing
+    //             input_trade: trade(Side::Buy, 1500.0, 1.0),
+    //             expected_orders: client_orders(
+    //                 vec![order_open(Side::Buy, 1000.0, 1.0, 0.0)],
+    //                 vec![order_open(Side::Sell, 2000.0, 1.0, 0.0)]
+    //             ),
+    //             expected_balances: balances(
+    //                 Balance::new(10.0, 9.0),
+    //                 Balance::new(10000.0, 9000.0)
+    //             )
+    //         },
+    //         TestCase {
+    //             // TC1: Trade matches 0.5 of our open ask of (1.0 for 2000.0), so Sell 0.5 btc
+    //             input_trade: trade(Side::Buy, 2000.0, 0.5),
+    //             expected_orders: client_orders(
+    //                 vec![order_open(Side::Buy, 1000.0, 1.0, 0.0)],
+    //                 vec![order_open(Side::Sell, 2000.0, 0.5, 0.5)]
+    //             ),
+    //             expected_balances: balances(
+    //                 Balance::new(9.5, 9.0),
+    //                 Balance::new(11000.0, 10000.0)
+    //             )
+    //         },
+    //         TestCase {
+    //             // TC2: Trade matches 0.5 of our open bid of (1000.0 for 1.0), so Buy 0.5 btc
+    //             input_trade: trade(Side::Sell, 1000.0, 0.5),
+    //             expected_orders: client_orders(
+    //                 vec![order_open(Side::Buy, 1000.0, 0.5, 0.5)],
+    //                 vec![order_open(Side::Sell, 2000.0, 0.5, 0.5)]
+    //             ),
+    //             expected_balances: balances(
+    //                 Balance::new(10.0, 9.5),
+    //                 Balance::new(10500.0, 10000.0)
+    //             )
+    //         },
+    //         // Todo: More cases please
+    //     ];
+    //
+    // }
 }

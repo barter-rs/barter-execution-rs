@@ -75,7 +75,6 @@ pub mod test_util {
         model::ClientOrderId
     };
     use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side};
-    use barter_data::ExchangeId;
     use uuid::Uuid;
 
     pub fn order_open(side: Side, price: f64, quantity: f64, filled: f64) -> Order<Open> {
