@@ -123,15 +123,12 @@ impl SimulatedExchange {
     }
 
     fn match_bids(&mut self, instrument: &Instrument, trade: &PublicTrade) {
-        // Get bid ClientOrders
-        let client_orders = self.client_orders_mut(instrument);
-
         // Keep track of how much trade liquidity is remaining to match with
         let mut remaining_liquidity = trade.quantity;
 
         let best_bid = loop {
             // Pop the best bid Order<Open>
-            let best_bid = match client_orders.bids.pop() {
+            let best_bid = match self.client_orders_mut(instrument).bids.pop() {
                 Some(best_bid) => best_bid,
                 None => break None,
             };
@@ -150,7 +147,7 @@ impl SimulatedExchange {
                     remaining_liquidity -= trade_quantity;
 
                     // Update balances & send AccountEvents to client
-                    // self.update_client_account_from_match(best_bid, trade_quantity);
+                    self.update_client_account_from_match(best_bid, trade_quantity);
 
                     // Exact full fill with zero remaining trade liquidity (highly unlikely)
                     if remaining_liquidity.is_zero() {
@@ -164,7 +161,7 @@ impl SimulatedExchange {
                     let trade_quantity = remaining_liquidity;
 
                     // Update balances & send AccountEvents to client
-                    // self.update_client_account_from_match(best_bid.clone(), trade_quantity);
+                    self.update_client_account_from_match(best_bid.clone(), trade_quantity);
 
                     break Some(best_bid)
                 }
@@ -173,7 +170,7 @@ impl SimulatedExchange {
 
         // If best bid had a partial fill or is no longer a match, push it back onto the end of bids
         if let Some(best_bid) = best_bid {
-            client_orders.bids.push(best_bid)
+            self.client_orders_mut(instrument).bids.push(best_bid)
         }
     }
 
@@ -262,61 +259,58 @@ impl SimulatedExchange {
         // 5a. btc { total: 0.5, available: 0.0 }, usdt { total: 50.0, available: 50.0 }
         // '--> usdt total & available = (trade_quantity * price) - fees
 
-
-
         let Instrument { base, quote, ..} = &order.instrument;
 
-        // let base = self
-        //     .balances
-        //     .get_mut(base)
-        //     .expect(&format!("Cannot update Balance for non-configured base Symbol: {}", base));
-        // let quote = self
-        //     .balances
-        //     .get_mut(quote)
-        //     .expect(&format!("Cannot update Balance for non-configured quote Symbol: {}", quote));
-
-        let mut base = *self
+        let mut new_base_balance = *self
             .balances
             .get(base)
             .unwrap_or_else(|| panic!("Cannot update Balance for non-configured base Symbol: {}", base));
 
-        let mut quote = *self
+        let mut new_quote_balance = *self
             .balances
             .get(quote)
             .unwrap_or_else(|| panic!("Cannot update Balance for non-configured quote Symbol: {}", quote));
-
-
 
         match order.state.side {
             Side::Buy => {
                 // Base total & available increase by trade_quantity minus base fees
                 let base_increase = trade_quantity - fees.fees;
-                base.total += base_increase;
-                base.available += base_increase;
+                new_base_balance.total += base_increase;
+                new_base_balance.available += base_increase;
 
                 // Quote total decreases by (trade_quantity * price)
                 // Note: available was already decreased by the opening of the Side::Buy order
-                quote.total -= trade_quantity * order.state.price;
+                new_quote_balance.total -= trade_quantity * order.state.price;
             }
 
             Side::Sell => {
                 // Base total decreases by trade_quantity
                 // Note: available was already decreased by the opening of the Side::Sell order
-                base.total -= trade_quantity;
+                new_base_balance.total -= trade_quantity;
 
                 // Quote total & available increase by (trade_quantity * price) minus quote fees
                 let quote_increase = (trade_quantity * order.state.price) - fees.fees;
-                quote.total += quote_increase;
-                quote.available += quote_increase
+                new_quote_balance.total += quote_increase;
+                new_quote_balance.available += quote_increase
             }
         }
+
+        *self.balances
+            .get_mut(base)
+            .expect(&format!("Cannot update Balance for non-configured base Symbol: {}", base))
+            = new_base_balance;
+
+        *self.balances
+            .get_mut(quote)
+            .expect(&format!("Cannot update Balance for non-configured quote Symbol: {}", base))
+            = new_quote_balance;
 
         AccountEvent {
             received_time: Utc::now(),
             exchange: order.exchange.clone(),
             kind: AccountEventKind::Balances(vec![
-                SymbolBalance::new(order.instrument.base.clone(), base),
-                SymbolBalance::new(order.instrument.quote.clone(), quote),
+                SymbolBalance::new(order.instrument.base.clone(), new_base_balance),
+                SymbolBalance::new(order.instrument.quote.clone(), new_quote_balance),
             ])
         }
     }
