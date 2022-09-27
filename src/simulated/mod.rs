@@ -43,7 +43,7 @@ pub struct SimulatedExchange {
 //     orders: HashMap<Instrument, ClientOrders>,
 // }
 
-#[derive(Clone, PartialEq, Debug, Deserialize, Serialize)]
+#[derive(Clone, Eq, PartialEq, Debug, Deserialize, Serialize)]
 pub struct ClientOrders {
     pub bids: Vec<Order<Open>>,
     pub asks: Vec<Order<Open>>,
@@ -131,7 +131,7 @@ impl SimulatedExchange {
 
         let best_bid = loop {
             // Pop the best bid Order<Open>
-            let mut best_bid = match client_orders.bids.pop() {
+            let best_bid = match client_orders.bids.pop() {
                 Some(best_bid) => best_bid,
                 None => break None,
             };
@@ -150,7 +150,7 @@ impl SimulatedExchange {
                     remaining_liquidity -= trade_quantity;
 
                     // Update balances & send AccountEvents to client
-                    self.update_client_account_from_match(best_bid, trade_quantity);
+                    // self.update_client_account_from_match(best_bid, trade_quantity);
 
                     // Exact full fill with zero remaining trade liquidity (highly unlikely)
                     if remaining_liquidity.is_zero() {
@@ -164,7 +164,7 @@ impl SimulatedExchange {
                     let trade_quantity = remaining_liquidity;
 
                     // Update balances & send AccountEvents to client
-                    self.update_client_account_from_match(best_bid.clone(), trade_quantity);
+                    // self.update_client_account_from_match(best_bid.clone(), trade_quantity);
 
                     break Some(best_bid)
                 }
@@ -263,17 +263,27 @@ impl SimulatedExchange {
         // '--> usdt total & available = (trade_quantity * price) - fees
 
 
+
         let Instrument { base, quote, ..} = &order.instrument;
 
-        let base = self
-            .balances
-            .get_mut(base)
-            .expect(&format!("Cannot update Balance for non-configured base Symbol: {}", base));
+        // let base = self
+        //     .balances
+        //     .get_mut(base)
+        //     .expect(&format!("Cannot update Balance for non-configured base Symbol: {}", base));
+        // let quote = self
+        //     .balances
+        //     .get_mut(quote)
+        //     .expect(&format!("Cannot update Balance for non-configured quote Symbol: {}", quote));
 
-        let quote = self
+        let mut base = *self
             .balances
-            .get_mut(quote)
-            .expect(&format!("Cannot update Balance for non-configured quote Symbol: {}", quote));
+            .get(base)
+            .unwrap_or_else(|| panic!("Cannot update Balance for non-configured base Symbol: {}", base));
+
+        let mut quote = *self
+            .balances
+            .get(quote)
+            .unwrap_or_else(|| panic!("Cannot update Balance for non-configured quote Symbol: {}", quote));
 
 
 
@@ -305,8 +315,8 @@ impl SimulatedExchange {
             received_time: Utc::now(),
             exchange: order.exchange.clone(),
             kind: AccountEventKind::Balances(vec![
-                SymbolBalance::new(order.instrument.base.clone(), *base),
-                SymbolBalance::new(order.instrument.quote.clone(), *quote),
+                SymbolBalance::new(order.instrument.base.clone(), base),
+                SymbolBalance::new(order.instrument.quote.clone(), quote),
             ])
         }
     }
@@ -328,8 +338,7 @@ impl SimulatedExchange {
 
         let orders_open = self.markets
             .values()
-            .map(|market| [&market.bids, &market.asks])
-            .flatten()
+            .flat_map(|market| [&market.bids, &market.asks])
             .flatten()
             .cloned()
             .map(Ok)
@@ -446,7 +455,7 @@ impl SimulatedExchange {
             .expect("SimulatedExchange failed to send oneshot cancel_orders response")
     }
 
-    pub fn find_order_indexes(orders: &Vec<Order<Open>>, cid: &ClientOrderId) -> Vec<usize> {
+    pub fn find_order_indexes(orders: &[Order<Open>], cid: &ClientOrderId) -> Vec<usize> {
         orders
             .iter()
             .enumerate()
@@ -461,12 +470,10 @@ impl SimulatedExchange {
     pub async fn cancel_orders_all(&mut self, response_tx: oneshot::Sender<Result<(), ExecutionError>>) {
         tokio::time::sleep(self.latency).await;
 
-        self.markets
-            .values_mut()
-            .map(|market| {
-                market.bids.drain(..);
-                market.asks.drain(..);
-            });
+        for market in self.markets.values_mut() {
+            market.bids.drain(..);
+            market.asks.drain(..);
+        }
 
         response_tx
             .send(Ok(()))
@@ -474,6 +481,7 @@ impl SimulatedExchange {
     }
 }
 
+#[derive(Copy, Clone, PartialEq, PartialOrd, Debug, Deserialize, Serialize)]
 pub enum OrderFill {
     Full,
     Partial,

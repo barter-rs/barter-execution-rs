@@ -86,7 +86,7 @@ impl Ord for Order<Open> {
         self.state
             .price
             .partial_cmp(&other.state.price)
-            .expect(&format!("{}.partial_cmp({}) impossible", self.state.price, other.state.price))
+            .unwrap_or_else(|| panic!("{}.partial_cmp({}) impossible", self.state.price, other.state.price))
     }
 }
 
