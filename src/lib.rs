@@ -52,6 +52,7 @@ pub trait ExecutionClient {
 pub enum ClientId {
     Simulated,
     Ftx,
+    SushiSwapV3
 }
 
 impl Display for ClientId {
@@ -64,7 +65,8 @@ impl ClientId {
     pub fn as_str(&self) -> &'static str {
         match self {
             ClientId::Simulated => "simulated",
-            ClientId::Ftx => "ftx"
+            ClientId::Ftx => "ftx",
+            ClientId::SushiSwapV3 => "sushiswapv3"
         }
     }
 }
@@ -80,7 +82,7 @@ pub mod test_util {
     pub fn order_open(side: Side, price: f64, quantity: f64, filled: f64) -> Order<Open> {
         Order {
             exchange: Exchange::from("exchange"),
-            instrument: Instrument::from(("btc", "usdt", InstrumentKind::FuturePerpetual)),
+            instrument: Instrument::from(("base", "quote", InstrumentKind::Spot)),
             cid: ClientOrderId(Uuid::new_v4()),
             state: Open {
                 id: OrderId::from("id"),

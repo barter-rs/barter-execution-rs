@@ -1,21 +1,17 @@
 mod account;
 
+use self::account::ClientAccount;
 use crate::{
     AccountEvent, Open, Order, RequestOpen, RequestCancel, ExecutionError, SymbolBalance, OrderId,
-    model::{ClientOrderId, AccountEventKind, trade::{Trade, TradeId, SymbolFees}, balance::Balance},
+    model::ClientOrderId,
 };
-use barter_integration::model::{Instrument, Side, Symbol};
+use barter_integration::model::{Instrument, Side};
 use barter_data::model::PublicTrade;
 use std::{
-    collections::HashMap,
     time::Duration,
 };
-use chrono::Utc;
-use serde::{Deserialize, Serialize};
 use tokio::sync::{mpsc, oneshot};
 use uuid::Uuid;
-use num_traits::identities::Zero;
-use crate::simulated::account::ClientAccount;
 
 /// Todo:
 #[derive(Debug)]

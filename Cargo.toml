@@ -30,6 +30,10 @@ thiserror = "1.0.32"
 serde = { version = "1.0.143", features = ["derive"] }
 serde_json = "1.0.83"
 
+# DeFi
+web3 = "0.18.0"
+hex = "0.4.3"
+
 # Misc
 uuid = {version = "0.8.2", features = ["v4", "serde"]}
 chrono = {version = "0.4.22", features = ["serde"]}
