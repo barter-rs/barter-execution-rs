@@ -277,111 +277,111 @@ mod tests {
     use barter_integration::model::Side;
     use super::*;
 
-    #[test]
-    fn test_client_orders_has_matching_bid() {
-        struct TestCase {
-            client_orders: ClientOrders,
-            input_trade: PublicTrade,
-            expected: bool,
-        }
-
-        let tests = vec![
-            TestCase { // TC0: No matching bids for trade since no bids
-                client_orders: client_orders(vec![], vec![]),
-                input_trade: trade(Side::Buy, 100.0, 1.0),
-                expected: false,
-            },
-            TestCase { // TC1: No matching bids for trade
-                client_orders: client_orders(
-                    vec![open_order(Side::Buy, 50.0, 1.0, 0.0)],
-                    vec![]
-                ),
-                input_trade: trade(Side::Buy, 100.0, 1.0),
-                expected: false,
-            },
-            TestCase { // TC2: Exact matching bid for trade
-                client_orders: client_orders(
-                    vec![open_order(Side::Buy, 100.0, 1.0, 0.0)],
-                    vec![]
-                ),
-                input_trade: trade(Side::Buy, 100.0, 1.0),
-                expected: true,
-            },
-            TestCase { // TC3: Matching bid for trade
-                client_orders: client_orders(
-                    vec![open_order(Side::Buy, 150.0, 1.0, 0.0)],
-                    vec![]
-                ),
-                input_trade: trade(Side::Buy, 100.0, 1.0),
-                expected: true,
-            },
-            TestCase { // TC4: No matching bid for trade even though there is an intersecting ask
-                client_orders: client_orders(
-                    vec![],
-                    vec![open_order(Side::Sell, 150.0, 1.0, 0.0)]
-                ),
-                input_trade: trade(Side::Buy, 100.0, 1.0),
-                expected: false,
-            },
-        ];
-
-        for (index, test) in tests.into_iter().enumerate() {
-            let actual = test.client_orders.has_matching_bid(&test.input_trade);
-            assert_eq!(actual, test.expected, "TC{} failed", index);
-        }
-    }
-
-    #[test]
-    fn test_client_orders_has_matching_ask() {
-        struct TestCase {
-            client_orders: ClientOrders,
-            input_trade: PublicTrade,
-            expected: bool,
-        }
-
-        let tests = vec![
-            TestCase { // TC0: No matching ask for trade since no asks
-                client_orders: client_orders(vec![], vec![]),
-                input_trade: trade(Side::Sell, 100.0, 1.0),
-                expected: false,
-            },
-            TestCase { // TC1: No matching ask for trade
-                client_orders: client_orders(
-                    vec![],
-                    vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
-                ),
-                input_trade: trade(Side::Sell, 100.0, 1.0),
-                expected: false,
-            },
-            TestCase { // TC2: Exact matching ask for trade
-                client_orders: client_orders(
-                    vec![],
-                    vec![open_order(Side::Sell, 100.0, 1.0, 0.0)],
-                ),
-                input_trade: trade(Side::Sell, 100.0, 1.0),
-                expected: true,
-            },
-            TestCase { // TC3: Matching ask for trade
-                client_orders: client_orders(
-                    vec![],
-                    vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
-                ),
-                input_trade: trade(Side::Sell, 200.0, 1.0),
-                expected: true,
-            },
-            TestCase { // TC4: No matching ask for trade even though there is an intersecting bid
-                client_orders: client_orders(
-                    vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
-                    vec![],
-                ),
-                input_trade: trade(Side::Buy, 200.0, 1.0),
-                expected: false,
-            },
-        ];
-
-        for (index, test) in tests.into_iter().enumerate() {
-            let actual = test.client_orders.has_matching_ask(&test.input_trade);
-            assert_eq!(actual, test.expected, "TC{} failed", index);
-        }
-    }
+    // #[test]
+    // fn test_client_orders_has_matching_bid() {
+    //     struct TestCase {
+    //         client_orders: ClientOrders,
+    //         input_trade: PublicTrade,
+    //         expected: bool,
+    //     }
+    //
+    //     let tests = vec![
+    //         TestCase { // TC0: No matching bids for trade since no bids
+    //             client_orders: client_orders(vec![], vec![]),
+    //             input_trade: trade(Side::Buy, 100.0, 1.0),
+    //             expected: false,
+    //         },
+    //         TestCase { // TC1: No matching bids for trade
+    //             client_orders: client_orders(
+    //                 vec![open_order(Side::Buy, 50.0, 1.0, 0.0)],
+    //                 vec![]
+    //             ),
+    //             input_trade: trade(Side::Buy, 100.0, 1.0),
+    //             expected: false,
+    //         },
+    //         TestCase { // TC2: Exact matching bid for trade
+    //             client_orders: client_orders(
+    //                 vec![open_order(Side::Buy, 100.0, 1.0, 0.0)],
+    //                 vec![]
+    //             ),
+    //             input_trade: trade(Side::Buy, 100.0, 1.0),
+    //             expected: true,
+    //         },
+    //         TestCase { // TC3: Matching bid for trade
+    //             client_orders: client_orders(
+    //                 vec![open_order(Side::Buy, 150.0, 1.0, 0.0)],
+    //                 vec![]
+    //             ),
+    //             input_trade: trade(Side::Buy, 100.0, 1.0),
+    //             expected: true,
+    //         },
+    //         TestCase { // TC4: No matching bid for trade even though there is an intersecting ask
+    //             client_orders: client_orders(
+    //                 vec![],
+    //                 vec![open_order(Side::Sell, 150.0, 1.0, 0.0)]
+    //             ),
+    //             input_trade: trade(Side::Buy, 100.0, 1.0),
+    //             expected: false,
+    //         },
+    //     ];
+    //
+    //     for (index, test) in tests.into_iter().enumerate() {
+    //         let actual = test.client_orders.has_matching_bid(&test.input_trade);
+    //         assert_eq!(actual, test.expected, "TC{} failed", index);
+    //     }
+    // }
+    //
+    // #[test]
+    // fn test_client_orders_has_matching_ask() {
+    //     struct TestCase {
+    //         client_orders: ClientOrders,
+    //         input_trade: PublicTrade,
+    //         expected: bool,
+    //     }
+    //
+    //     let tests = vec![
+    //         TestCase { // TC0: No matching ask for trade since no asks
+    //             client_orders: client_orders(vec![], vec![]),
+    //             input_trade: trade(Side::Sell, 100.0, 1.0),
+    //             expected: false,
+    //         },
+    //         TestCase { // TC1: No matching ask for trade
+    //             client_orders: client_orders(
+    //                 vec![],
+    //                 vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
+    //             ),
+    //             input_trade: trade(Side::Sell, 100.0, 1.0),
+    //             expected: false,
+    //         },
+    //         TestCase { // TC2: Exact matching ask for trade
+    //             client_orders: client_orders(
+    //                 vec![],
+    //                 vec![open_order(Side::Sell, 100.0, 1.0, 0.0)],
+    //             ),
+    //             input_trade: trade(Side::Sell, 100.0, 1.0),
+    //             expected: true,
+    //         },
+    //         TestCase { // TC3: Matching ask for trade
+    //             client_orders: client_orders(
+    //                 vec![],
+    //                 vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
+    //             ),
+    //             input_trade: trade(Side::Sell, 200.0, 1.0),
+    //             expected: true,
+    //         },
+    //         TestCase { // TC4: No matching ask for trade even though there is an intersecting bid
+    //             client_orders: client_orders(
+    //                 vec![open_order(Side::Sell, 150.0, 1.0, 0.0)],
+    //                 vec![],
+    //             ),
+    //             input_trade: trade(Side::Buy, 200.0, 1.0),
+    //             expected: false,
+    //         },
+    //     ];
+    //
+    //     for (index, test) in tests.into_iter().enumerate() {
+    //         let actual = test.client_orders.has_matching_ask(&test.input_trade);
+    //         assert_eq!(actual, test.expected, "TC{} failed", index);
+    //     }
+    // }
 }
