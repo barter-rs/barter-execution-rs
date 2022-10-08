@@ -1,37 +1,43 @@
 [package]
 name = "barter-execution"
-version = "0.1.0"
-authors = ["Just A Stream <93921983+just-a-stream@users.noreply.github.com>"]
+version = "0.2.0"
 edition = "2021"
+authors = ["Just A Stream <93921983+just-a-stream@users.noreply.github.com>"]
 license = "MIT"
 documentation = "https://docs.rs/barter-execution/"
 repository = "https://gitlab.com/open-source-keir/financial-modelling/trading/barter-execution-rs"
 readme = "README.md"
-description = "Real and simulated trade execution library."
+description = "High-performance and normalised trading interface capable of executing across many financial venues. Also provides a feature rich simulated exchange."
 keywords = ["trading", "backtesting", "crypto", "stocks", "investment"]
 categories = ["accessibility", "simulation"]
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
 # Barter Ecosystem
-barter = "0.7.2"
-barter-integration = "0.2.2"
-barter-data = "0.4.4"
+barter-integration = "0.3.4"
+barter-data = "0.5.6"
 
 # Logging
-tracing = "0.1.29"
+tracing = "0.1.36"
 
 # Async
-tokio = { version = "1.14.0", features = ["full"] }
-tokio-stream = { version = "0.1.7", features = ["sync"] }
+tokio = { version = "1.17.0", features = ["sync", "macros", "rt-multi-thread"] }
+tokio-stream = { version = "0.1.9", features = ["sync"] }
 tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
-futures = "0.3.19"
-async-trait = "0.1.52"
-
-# SerDe
-serde = { version = "1.0.130", features = ["derive"] }
-serde_json = "1.0.68"
+futures = "0.3.21"
+async-trait = "0.1.57"
+pin-project = "1.0.10"
+reqwest = { version = "0.11.7", features = ["rustls-tls", "json"] }
 
 # Error
-thiserror = "1.0.30"
+thiserror = "1.0.32"
+
+# SerDe
+serde = { version = "1.0.143", features = ["derive"] }
+serde_json = "1.0.83"
+
+# Misc
+uuid = {version = "0.8.2", features = ["v4", "serde"]}
+chrono = {version = "0.4.22", features = ["serde"]}
+parking_lot = "0.12.1"
+num-traits = "0.2.15"
