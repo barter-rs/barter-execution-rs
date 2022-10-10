@@ -1,11 +1,11 @@
 [package]
 name = "barter-execution"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2021"
 authors = ["JustAStream <keirinvestment@gmail.com>"]
 license = "MIT"
 documentation = "https://docs.rs/barter-execution/"
-repository = "https://gitlab.com/open-source-keir/financial-modelling/trading/barter-execution-rs"
+repository = "https://github.com/barter-rs/barter-execution-rs"
 readme = "README.md"
 description = "High-performance and normalised trading interface capable of executing across many financial venues. Also provides a feature rich simulated exchange."
 keywords = ["trading", "backtesting", "crypto", "stocks", "investment"]
