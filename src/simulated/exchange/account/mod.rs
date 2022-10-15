@@ -210,7 +210,7 @@ impl ClientAccount {
 
         let balance_updates = removed_orders
             .iter()
-            .map(|cancelled| self.balances.update_from_cancel(cancelled))
+            .map(|cancelled| Ok(self.balances.update_from_cancel(cancelled)))
             .collect();
 
         let cancelled_orders = removed_orders

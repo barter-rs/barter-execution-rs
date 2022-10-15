@@ -168,10 +168,10 @@ impl ClientBalances {
         AccountEvent {
             received_time: Utc::now(),
             exchange: Exchange::from(ExecutionId::Simulated),
-            kind: AccountEventKind::Balances(vec![
+            kind: AccountEventKind::Balances(Ok(vec![
                 SymbolBalance::new(base.clone(), base_balance),
                 SymbolBalance::new(quote.clone(), quote_balance),
-            ]),
+            ])),
         }
     }
 
