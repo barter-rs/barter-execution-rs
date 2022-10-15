@@ -27,7 +27,7 @@ pub struct AccountEvent {
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub enum AccountEventKind {
     // HTTP Only
-    OrdersOpen(Vec<Order<Open>>),
+    OrdersOpen(Result<Vec<Order<Open>>, ExecutionError>),
     OrdersNew(Vec<Result<Order<Open>, ExecutionError>>),
     OrdersCancelled(Vec<Result<Order<Cancelled>, ExecutionError>>),
 
@@ -36,7 +36,7 @@ pub enum AccountEventKind {
     Trade(Trade),
 
     // HTTP & WebSocket
-    Balances(Vec<SymbolBalance>),
+    Balances(Result<Vec<SymbolBalance>, ExecutionError>),
 }
 
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Hash, Debug, Deserialize, Serialize)]
