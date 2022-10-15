@@ -83,7 +83,7 @@ pub trait ExecutionClient {
     ) -> Vec<Result<Order<Cancelled>, ExecutionError>>;
 
     /// Cancel all account [`Order<Open>`]s.
-    async fn cancel_orders_all(&self) -> Result<Vec<Order<Cancelled>>, ExecutionError>;
+    async fn cancel_orders_all(&self) -> Vec<Result<Order<Cancelled>, ExecutionError>>;
 }
 
 /// Unique identifier for an [`ExecutionClient`] implementation.

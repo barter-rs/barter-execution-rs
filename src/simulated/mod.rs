@@ -33,6 +33,6 @@ pub enum SimulatedEvent {
             oneshot::Sender<Vec<Result<Order<Cancelled>, ExecutionError>>>,
         ),
     ),
-    CancelOrdersAll(oneshot::Sender<Result<Vec<Order<Cancelled>>, ExecutionError>>),
+    CancelOrdersAll(oneshot::Sender<Vec<Result<Order<Cancelled>, ExecutionError>>>),
     MarketTrade((Instrument, PublicTrade)),
 }

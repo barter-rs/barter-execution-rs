@@ -8,6 +8,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::fmt::Formatter;
 use uuid::Uuid;
+use crate::ExecutionError;
 
 pub mod balance;
 pub mod order;
@@ -27,8 +28,8 @@ pub struct AccountEvent {
 pub enum AccountEventKind {
     // HTTP Only
     OrdersOpen(Vec<Order<Open>>),
-    OrdersNew(Vec<Order<Open>>),
-    OrdersCancelled(Vec<Order<Cancelled>>),
+    OrdersNew(Vec<Result<Order<Open>, ExecutionError>>),
+    OrdersCancelled(Vec<Result<Order<Cancelled>, ExecutionError>>),
 
     // WebSocket Only
     Balance(SymbolBalance),

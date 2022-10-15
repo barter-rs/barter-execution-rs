@@ -203,7 +203,7 @@ async fn test_3_open_limit_buy_order(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_new_order);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_new_order);
         }
         other => {
             panic!("try_recv() consumed unexpected: {:?}", other);
@@ -277,7 +277,7 @@ async fn test_5_cancel_buy_order(
             ..
         }) => {
             assert_eq!(cancelled.len(), 1);
-            assert_eq!(cancelled[0].clone(), expected_cancelled);
+            assert_eq!(cancelled[0].clone().unwrap(), expected_cancelled);
         }
         other => {
             panic!("try_recv() consumed unexpected: {:?}", other);
@@ -380,7 +380,7 @@ async fn test_6_open_2x_limit_buy_orders(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_order_new_1);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_order_new_1);
         }
         other => {
             panic!("try_recv() consumed unexpected: {:?}", other);
@@ -409,7 +409,7 @@ async fn test_6_open_2x_limit_buy_orders(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_order_new_2);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_order_new_2);
         }
         other => {
             panic!("try_recv() consumed unexpected: {:?}", other);
@@ -599,7 +599,7 @@ async fn test_9_open_2x_limit_sell_orders(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_order_new_1);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_order_new_1);
         }
         other => {
             panic!(
@@ -634,7 +634,7 @@ async fn test_9_open_2x_limit_sell_orders(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_order_new_2);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_order_new_2);
         }
         other => {
             panic!(
@@ -807,7 +807,7 @@ async fn test_11_cancel_all_orders(
     test_9_ids_2: Ids,
     event_account_rx: &mut mpsc::UnboundedReceiver<AccountEvent>,
 ) {
-    let cancelled = client.cancel_orders_all().await.unwrap();
+    let cancelled = client.cancel_orders_all().await;
 
     let expected_cancelled = vec![
         order_cancelled(
@@ -827,8 +827,8 @@ async fn test_11_cancel_all_orders(
     ];
 
     assert_eq!(cancelled.len(), 2);
-    assert_eq!(cancelled[0].clone(), expected_cancelled[0]);
-    assert_eq!(cancelled[1].clone(), expected_cancelled[1]);
+    assert_eq!(cancelled[0].clone().unwrap(), expected_cancelled[0]);
+    assert_eq!(cancelled[1].clone().unwrap(), expected_cancelled[1]);
 
     // Check AccountEvent Order cancelled for both the bid & ask
     match event_account_rx.try_recv() {
@@ -837,8 +837,8 @@ async fn test_11_cancel_all_orders(
             ..
         }) => {
             assert_eq!(cancelled.len(), 2);
-            assert_eq!(cancelled[0].clone(), expected_cancelled[0]);
-            assert_eq!(cancelled[1].clone(), expected_cancelled[1]);
+            assert_eq!(cancelled[0].clone().unwrap(), expected_cancelled[0]);
+            assert_eq!(cancelled[1].clone().unwrap(), expected_cancelled[1]);
         }
         other => {
             panic!(
@@ -964,7 +964,7 @@ async fn test_13_fail_to_open_one_of_two_limits_with_insufficient_funds(
             ..
         }) => {
             assert_eq!(new_orders.len(), 1);
-            assert_eq!(new_orders[0].clone(), expected_order_new_2);
+            assert_eq!(new_orders[0].clone().unwrap(), expected_order_new_2);
         }
         other => {
             panic!(

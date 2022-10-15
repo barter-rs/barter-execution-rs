@@ -102,7 +102,7 @@ impl ClientAccount {
             .send(AccountEvent {
                 received_time: Utc::now(),
                 exchange: Exchange::from(ExecutionId::Simulated),
-                kind: AccountEventKind::OrdersNew(vec![open.clone()]),
+                kind: AccountEventKind::OrdersNew(vec![Ok(open.clone())]),
             })
             .expect("Client is offline - failed to send AccountEvent::Trade");
 
@@ -175,7 +175,7 @@ impl ClientAccount {
             .send(AccountEvent {
                 received_time: Utc::now(),
                 exchange: Exchange::from(ExecutionId::Simulated),
-                kind: AccountEventKind::OrdersCancelled(vec![cancelled.clone()]),
+                kind: AccountEventKind::OrdersCancelled(vec![Ok(cancelled.clone())]),
             })
             .expect("Client is offline - failed to send AccountEvent::Trade");
 
@@ -194,7 +194,7 @@ impl ClientAccount {
     /// [`oneshot::Sender`].
     pub fn cancel_orders_all(
         &mut self,
-        response_tx: oneshot::Sender<Result<Vec<Order<Cancelled>>, ExecutionError>>,
+        response_tx: oneshot::Sender<Vec<Result<Order<Cancelled>, ExecutionError>>>,
     ) {
         let removed_orders = self
             .orders
@@ -215,8 +215,8 @@ impl ClientAccount {
 
         let cancelled_orders = removed_orders
             .into_iter()
-            .map(Order::from)
-            .collect::<Vec<Order<Cancelled>>>();
+            .map(|removed| Ok(Order::from(removed)))
+            .collect::<Vec<Result<Order<Cancelled>, ExecutionError>>>();
 
         // Send AccountEvents to client
         self.event_account_tx
@@ -235,7 +235,7 @@ impl ClientAccount {
             })
             .expect("Client is offline - failed to send AccountEvent::Balances");
 
-        respond_with_latency(self.latency, response_tx, Ok(cancelled_orders))
+        respond_with_latency(self.latency, response_tx, cancelled_orders)
     }
 
     /// Determine if the incoming [`PublicTrade`] liquidity matches any [`ClientOrders`] relating

@@ -89,7 +89,7 @@ impl ExecutionClient for SimulatedExecution {
             .expect("SimulatedExchange is offline - failed to receive CancelOrders response")
     }
 
-    async fn cancel_orders_all(&self) -> Result<Vec<Order<Cancelled>>, ExecutionError> {
+    async fn cancel_orders_all(&self) -> Vec<Result<Order<Cancelled>, ExecutionError>> {
         // Oneshot channel to communicate with the SimulatedExchange
         let (response_tx, response_rx) = oneshot::channel();
 
