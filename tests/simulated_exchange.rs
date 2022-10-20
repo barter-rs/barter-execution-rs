@@ -48,7 +48,7 @@ async fn main() {
 
     // Initialise SimulatedExecution execution to interact with the exchange via the simulated channel
     let client = SimulatedExecution {
-        request_tx: event_simulated_tx.clone(),
+        simulated_tx: event_simulated_tx.clone(),
     };
 
     // 1. Fetch initial OpenOrders when we have no open Orders

@@ -11,7 +11,7 @@ use tokio::sync::{mpsc, oneshot};
 /// [`SimulatedExchange`](super::exchange::SimulatedExchange).
 #[derive(Clone, Debug)]
 pub struct SimulatedExecution {
-    pub request_tx: mpsc::UnboundedSender<SimulatedEvent>,
+    pub simulated_tx: mpsc::UnboundedSender<SimulatedEvent>,
 }
 
 #[async_trait]
@@ -19,8 +19,8 @@ impl ExecutionClient for SimulatedExecution {
     const CLIENT: ExecutionId = ExecutionId::Simulated;
     type Config = mpsc::UnboundedSender<SimulatedEvent>;
 
-    async fn init(request_tx: Self::Config, _: mpsc::UnboundedSender<AccountEvent>) -> Self {
-        Self { request_tx }
+    async fn init(simulated_tx: Self::Config, _: mpsc::UnboundedSender<AccountEvent>) -> Self {
+        Self { simulated_tx }
     }
 
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError> {
@@ -28,7 +28,7 @@ impl ExecutionClient for SimulatedExecution {
         let (response_tx, response_rx) = oneshot::channel();
 
         // Send FetchOrdersOpen request to the SimulatedExchange
-        self.request_tx
+        self.simulated_tx
             .send(SimulatedEvent::FetchOrdersOpen(response_tx))
             .expect("SimulatedExchange is offline - failed to send FetchOrdersOpen request");
 
@@ -43,7 +43,7 @@ impl ExecutionClient for SimulatedExecution {
         let (response_tx, response_rx) = oneshot::channel();
 
         // Send FetchBalances request to the SimulatedExchange
-        self.request_tx
+        self.simulated_tx
             .send(SimulatedEvent::FetchBalances(response_tx))
             .expect("SimulatedExchange is offline - failed to send FetchBalances request");
 
@@ -61,7 +61,7 @@ impl ExecutionClient for SimulatedExecution {
         let (response_tx, response_rx) = oneshot::channel();
 
         // Send OpenOrders request to the SimulatedExchange
-        self.request_tx
+        self.simulated_tx
             .send(SimulatedEvent::OpenOrders((open_requests, response_tx)))
             .expect("SimulatedExchange is offline - failed to send OpenOrders request");
 
@@ -79,7 +79,7 @@ impl ExecutionClient for SimulatedExecution {
         let (response_tx, response_rx) = oneshot::channel();
 
         // Send CancelOrders request to the SimulatedExchange
-        self.request_tx
+        self.simulated_tx
             .send(SimulatedEvent::CancelOrders((cancel_requests, response_tx)))
             .expect("SimulatedExchange is offline - failed to send CancelOrders request");
 
@@ -94,7 +94,7 @@ impl ExecutionClient for SimulatedExecution {
         let (response_tx, response_rx) = oneshot::channel();
 
         // Send CancelOrdersAll request to the SimulatedExchange
-        self.request_tx
+        self.simulated_tx
             .send(SimulatedEvent::CancelOrdersAll(response_tx))
             .expect("SimulatedExchange is offline - failed to send CancelOrdersAll request");
 
