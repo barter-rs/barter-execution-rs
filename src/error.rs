@@ -20,3 +20,9 @@ pub enum ExecutionError {
     #[error("failed to open Order due to unsupported OrderKind: {0}")]
     UnsupportedOrderKind(OrderKind),
 }
+
+impl ExecutionError {
+    pub fn is_terminal(&self) -> bool {
+        unimplemented!()
+    }
+}

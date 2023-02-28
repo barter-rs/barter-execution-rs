@@ -52,9 +52,12 @@ pub mod simulated;
 /// Defines the communication with the exchange. Each exchange integration requires it's own
 /// implementation.
 #[async_trait]
-pub trait ExecutionClient {
+pub trait ExecutionClient
+where
+    Self: Sized,
+{
     const CLIENT: ExecutionId;
-    type Config;
+    type Config: Clone;
 
     /// Initialise a new [`ExecutionClient`] with the provided [`Self::Config`] and
     /// [`AccountEvent`] transmitter.
@@ -62,7 +65,7 @@ pub trait ExecutionClient {
     /// **Note:**
     /// Usually entails spawning an asynchronous WebSocket event loop to consume [`AccountEvent`]s
     /// from the exchange, as well as returning the HTTP client `Self`.
-    async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Self;
+    async fn init(config: Self::Config, event_tx: mpsc::UnboundedSender<AccountEvent>) -> Result<Self, ExecutionError>;
 
     /// Fetch account [`Order<Open>`]s.
     async fn fetch_orders_open(&self) -> Result<Vec<Order<Open>>, ExecutionError>;
@@ -125,7 +128,7 @@ pub mod test_util {
         simulated::exchange::account::order::Orders,
         Open, Order, OrderId,
     };
-    use barter_data::model::PublicTrade;
+    use barter_data::subscription::trade::PublicTrade;
     use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side};
 
     pub fn client_orders(
@@ -161,11 +164,11 @@ pub mod test_util {
         }
     }
 
-    pub fn public_trade(side: Side, price: f64, quantity: f64) -> PublicTrade {
+    pub fn public_trade(side: Side, price: f64, amount: f64) -> PublicTrade {
         PublicTrade {
             id: "trade_id".to_string(),
             price,
-            quantity,
+            amount,
             side,
         }
     }

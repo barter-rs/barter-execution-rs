@@ -2,7 +2,7 @@ use crate::{
     model::trade::{SymbolFees, Trade, TradeId},
     ExecutionError, Open, Order, OrderId, RequestOpen,
 };
-use barter_data::model::PublicTrade;
+use barter_data::subscription::trade::PublicTrade;
 use barter_integration::model::{Instrument, Side};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap};
@@ -140,7 +140,7 @@ impl Orders {
     /// client bid [`Order<Open>`]s.
     pub fn match_bids(&mut self, trade: &PublicTrade, fees_percent: f64) -> Vec<Trade> {
         // Keep track of how much trade liquidity is remaining to match with
-        let mut remaining_liquidity = trade.quantity;
+        let mut remaining_liquidity = trade.amount;
 
         // Collection of execution Trades generated from Order<Open> matches
         let mut trades = vec![];
@@ -233,7 +233,7 @@ impl Orders {
     /// client bid [`Order<Open>`]s.
     pub fn match_asks(&mut self, trade: &PublicTrade, fees_percent: f64) -> Vec<Trade> {
         // Keep track of how much trade liquidity is remaining to match with
-        let mut remaining_liquidity = trade.quantity;
+        let mut remaining_liquidity = trade.amount;
 
         // Collection of execution Trades generated from Order<Open> matches
         let mut trades = vec![];
