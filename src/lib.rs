@@ -125,7 +125,7 @@ pub mod test_util {
         simulated::exchange::account::order::Orders,
         Open, Order, OrderId,
     };
-    use barter_data::model::PublicTrade;
+    use barter_data::subscription::trade::PublicTrade;
     use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side};
 
     pub fn client_orders(
@@ -161,11 +161,11 @@ pub mod test_util {
         }
     }
 
-    pub fn public_trade(side: Side, price: f64, quantity: f64) -> PublicTrade {
+    pub fn public_trade(side: Side, price: f64, amount: f64) -> PublicTrade {
         PublicTrade {
             id: "trade_id".to_string(),
             price,
-            quantity,
+            amount,
             side,
         }
     }

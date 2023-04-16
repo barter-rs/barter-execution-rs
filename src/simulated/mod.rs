@@ -1,5 +1,5 @@
 use crate::{Cancelled, ExecutionError, Open, Order, RequestCancel, RequestOpen, SymbolBalance};
-use barter_data::model::PublicTrade;
+use barter_data::subscription::trade::PublicTrade;
 use barter_integration::model::Instrument;
 use tokio::sync::oneshot;
 

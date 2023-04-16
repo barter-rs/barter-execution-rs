@@ -2,7 +2,7 @@ use crate::util::{
     fees_50_percent, initial_balances, latency_50ms, open_order, order_cancel_request,
     order_cancelled, order_request_limit, run_default_exchange,
 };
-use barter_data::model::PublicTrade;
+use barter_data::subscription::trade::PublicTrade;
 use barter_execution::{
     error::ExecutionError,
     model::{
@@ -231,7 +231,7 @@ fn test_4_send_market_event_that_does_not_match_any_open_order(
                 id: "test_4".to_string(),
                 side: Side::Sell,
                 price: 1000.0,
-                quantity: 1.0,
+                amount: 1.0,
             },
         )))
         .unwrap();
@@ -439,7 +439,7 @@ async fn test_7_send_market_event_that_exact_full_matches_order(
                 id: "test_7".to_string(),
                 side: Side::Sell,
                 price: 200.0,
-                quantity: 1.0,
+                amount: 1.0,
             },
         )))
         .unwrap();
@@ -670,7 +670,7 @@ async fn test_10_send_market_event_that_full_and_partial_matches_orders(
                 id: "test_10".to_string(),
                 side: Side::Buy,
                 price: 1000.0,
-                quantity: 1.5,
+                amount: 1.5,
             },
         )))
         .unwrap();
