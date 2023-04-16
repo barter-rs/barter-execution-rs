@@ -13,7 +13,10 @@ use barter_execution::{
     },
     ExecutionId,
 };
-use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side, Symbol};
+use barter_integration::model::{
+    instrument::{kind::InstrumentKind, symbol::Symbol, Instrument},
+    Exchange, Side,
+};
 use std::{collections::HashMap, time::Duration};
 use tokio::sync::mpsc;
 
@@ -56,11 +59,7 @@ pub(super) fn fees_50_percent() -> f64 {
 
 // Instruments that the SimulatedExchange supports
 pub(super) fn instruments() -> Vec<Instrument> {
-    vec![Instrument::from((
-        "btc",
-        "usdt",
-        InstrumentKind::FuturePerpetual,
-    ))]
+    vec![Instrument::from(("btc", "usdt", InstrumentKind::Perpetual))]
 }
 
 // Initial SimulatedExchange ClientAccount balances for each Symbol

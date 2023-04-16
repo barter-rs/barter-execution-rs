@@ -1,5 +1,5 @@
 use crate::model::{order::OrderKind, ClientOrderId};
-use barter_integration::model::Symbol;
+use barter_integration::model::instrument::symbol::Symbol;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

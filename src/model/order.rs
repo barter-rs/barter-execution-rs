@@ -1,5 +1,8 @@
 use super::ClientOrderId;
-use barter_integration::model::{Exchange, Instrument, Side, Symbol};
+use barter_integration::model::{
+    instrument::{symbol::Symbol, Instrument},
+    Exchange, Side,
+};
 use serde::{Deserialize, Serialize};
 use std::{
     cmp::Ordering,

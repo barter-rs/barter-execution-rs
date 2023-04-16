@@ -1,4 +1,4 @@
-use barter_integration::model::Symbol;
+use barter_integration::model::instrument::symbol::Symbol;
 use serde::{Deserialize, Serialize};
 
 /// [`Balance`] associated with a [`Symbol`].

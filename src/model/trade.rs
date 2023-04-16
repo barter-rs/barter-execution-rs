@@ -1,5 +1,8 @@
 use super::order::OrderId;
-use barter_integration::model::{Instrument, Side, Symbol};
+use barter_integration::model::{
+    instrument::{symbol::Symbol, Instrument},
+    Side,
+};
 use serde::{Deserialize, Serialize};
 
 /// Normalised Barter private [`Trade`] model.

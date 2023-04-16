@@ -8,7 +8,7 @@ use crate::{
     Cancelled, ExecutionError, ExecutionId, Open, Order, RequestCancel, RequestOpen,
 };
 use barter_data::subscription::trade::PublicTrade;
-use barter_integration::model::{Exchange, Instrument, Side};
+use barter_integration::model::{instrument::Instrument, Exchange, Side};
 use chrono::Utc;
 use std::{fmt::Debug, time::Duration};
 use tokio::sync::{mpsc, oneshot};

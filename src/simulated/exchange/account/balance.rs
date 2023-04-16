@@ -6,7 +6,10 @@ use crate::{
     },
     ExecutionError, ExecutionId, Open, Order,
 };
-use barter_integration::model::{Exchange, Instrument, Side, Symbol};
+use barter_integration::model::{
+    instrument::{symbol::Symbol, Instrument},
+    Exchange, Side,
+};
 use chrono::Utc;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;

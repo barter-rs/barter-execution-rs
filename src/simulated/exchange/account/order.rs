@@ -3,7 +3,7 @@ use crate::{
     ExecutionError, Open, Order, OrderId, RequestOpen,
 };
 use barter_data::subscription::trade::PublicTrade;
-use barter_integration::model::{Instrument, Side};
+use barter_integration::model::{instrument::Instrument, Side};
 use serde::{Deserialize, Serialize};
 use std::{cmp::Ordering, collections::HashMap};
 

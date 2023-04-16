@@ -126,7 +126,10 @@ pub mod test_util {
         Open, Order, OrderId,
     };
     use barter_data::subscription::trade::PublicTrade;
-    use barter_integration::model::{Exchange, Instrument, InstrumentKind, Side};
+    use barter_integration::model::{
+        instrument::{kind::InstrumentKind, Instrument},
+        Exchange, Side,
+    };
 
     pub fn client_orders(
         trade_number: u64,
@@ -149,7 +152,7 @@ pub mod test_util {
     ) -> Order<Open> {
         Order {
             exchange: Exchange::from("exchange"),
-            instrument: Instrument::from(("base", "quote", InstrumentKind::FuturePerpetual)),
+            instrument: Instrument::from(("base", "quote", InstrumentKind::Perpetual)),
             cid,
             side,
             state: Open {
@@ -174,7 +177,7 @@ pub mod test_util {
         Trade {
             id,
             order_id: OrderId::from("order_id"),
-            instrument: Instrument::from(("base", "quote", InstrumentKind::FuturePerpetual)),
+            instrument: Instrument::from(("base", "quote", InstrumentKind::Perpetual)),
             side,
             price,
             quantity,

@@ -1,6 +1,6 @@
 [package]
 name = "barter-execution"
-version = "0.2.1"
+version = "0.3.0"
 edition = "2021"
 authors = ["Just A Stream <93921983+just-a-stream@users.noreply.github.com>"]
 license = "MIT"
@@ -14,8 +14,8 @@ categories = ["accessibility", "simulation"]
 
 [dependencies]
 # Barter Ecosystem
-barter-integration = "0.5.1"
-barter-data = "0.6.9"
+barter-integration = "0.5.3"
+barter-data = "0.7.0"
 
 # Logging
 tracing = "0.1.36"
@@ -23,7 +23,7 @@ tracing = "0.1.36"
 # Async
 tokio = { version = "1.17.0", features = ["sync", "macros", "rt-multi-thread"] }
 tokio-stream = { version = "0.1.9", features = ["sync"] }
-tokio-tungstenite = { version = "0.15.0", features = ["rustls-tls"] }
+tokio-tungstenite = { version = "0.18.0", features = ["rustls-tls-webpki-roots"] }
 futures = "0.3.21"
 async-trait = "0.1.57"
 pin-project = "1.0.10"
